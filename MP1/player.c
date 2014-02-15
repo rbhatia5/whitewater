@@ -21,11 +21,12 @@ typedef struct _CustomData {
   GtkWidget *streams_list;        /* Text widget to display info about the streams */
   gulong slider_update_signal_id; /* Signal ID for the slider update signal */
   GtkWidget *main_window;		  /* Main window of the UI */
-  
+  GtkWindow *dialog_window;
   GstState state;                 /* Current state of the pipeline */
   gint64 duration;                /* Duration of the clip, in nanoseconds */
 } CustomData;
-   
+  
+static gboolean refresh_ui (CustomData *data);
 /* This function is called when the GUI toolkit creates the physical window that will hold the video.
  * At this point we can retrieve its handler (which has a different meaning depending on the windowing system)
  * and pass it to GStreamer through the XOverlay interface. */
@@ -65,30 +66,27 @@ static void stop_cb (GtkButton *button, CustomData *data) {
    
 /* This function is called when the FILE OPEN button is clicked */
 static void fileopen_cb (GtkButton *button, CustomData *data) {
-GstState current_state;
-  //stop playing the video
   gst_element_set_state (data->playbin2, GST_STATE_READY);
-  	
   	GtkWidget *dialog;
 	dialog = gtk_file_chooser_dialog_new ("Open File",
-				      data->main_window,
+				      data->dialog_window,
 				      GTK_FILE_CHOOSER_ACTION_OPEN,
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
 				      NULL);
-
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
   	{
     char *filename;
-
-    //filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+    filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+    g_print("Filename read %s",filename);
+    
+    g_object_set (data->playbin2, "uri", "file:///home/arora15/Downloads/cbw3.avi", NULL);
     //File operations here
     //open_file (filename);
     //g_free (filename);
   	}
-
 gtk_widget_destroy (dialog);
-  
+gst_element_set_state (data->playbin2, GST_STATE_PLAYING);
 }
 
 /* This function is called when the main window is closed */
@@ -135,8 +133,10 @@ static void create_ui (CustomData *data) {
   GtkWidget *main_hbox;    /* HBox to hold the video_window and the stream info text widget */
   GtkWidget *controls;     /* HBox to hold the buttons and the slider */
   GtkWidget *play_button, *pause_button, *stop_button, *fileopen_button; /* Buttons */
-   
+  GtkWindow *dialog_window;
   main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  dialog_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  data->dialog_window = dialog_window;
   //setting player properties
   gtk_window_set_title(GTK_WINDOW(main_window), "CS 414 MP 1 Player");
   g_signal_connect (G_OBJECT (main_window), "delete-event", G_CALLBACK (delete_event_cb), data);

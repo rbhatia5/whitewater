@@ -29,7 +29,7 @@ CFLAGS  := $(PKG_CFLAGS) $(ADD_CFLAGS) $(CFLAGS)
 LDFLAGS := $(PKG_LDFLAGS) $(LDFLAGS)
 
 .PHONY : all
-all: main
+all: clean main
 
 main: player.o main.o
 	$(CC) $^ -o $@ $(LDFLAGS)
