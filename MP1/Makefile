@@ -29,10 +29,13 @@ CFLAGS  := $(PKG_CFLAGS) $(ADD_CFLAGS) $(CFLAGS)
 LDFLAGS := $(PKG_LDFLAGS) $(LDFLAGS)
 
 .PHONY : all
-all: player
+all: main
 
-player: player.o
+main: player.o main.o
 	$(CC) $^ -o $@ $(LDFLAGS)
+
+main.o: main.c	
+	$(CC) $(CFLAGS) -c $< -o $@
 	
 player.o: player.c
 	$(CC) $(CFLAGS) -c $< -o $@
