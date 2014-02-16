@@ -78,12 +78,15 @@ static void fileopen_cb (GtkButton *button, CustomData *data) {
   	{
     char *filename;
     filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-    g_print("File path %s",filename);
+    g_print("File path %s \n",filename);
    	//File operations here
    	char *final_path;
-   	final_path = malloc((strlen("file://")+strlen(filename)+1)*sizeof(char));
-   	strcat(final_path,"file://");
+   	int final_path_length =strlen("file://")+strlen(filename)+1;
+   	final_path = malloc(final_path_length);
+   	memset(final_path,0,final_path_length);
+   	strcpy(final_path,"file://");
    	strcat(final_path,filename);
+   	g_print(final_path);
    	//change the playbin uri to play the selected file
     g_object_set (data->playbin2, "uri", final_path, NULL);
     g_free (filename);
@@ -266,99 +269,6 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
       /* For extra responsiveness, we refresh the GUI as soon as we reach the PAUSED state */
       refresh_ui (data);
     }
-  }
-}
-   
-/* Extract metadata from all the streams and write it to the text widget in the GUI */
-static void analyze_streams (CustomData *data) {
-  gint i;
-  GstTagList *tags;
-  gchar *str, *total_str;
-  guint rate;
-  gint n_video, n_audio, n_text;
-  GtkTextBuffer *text;
-   
-  /* Clean current contents of the widget */
-  text = gtk_text_view_get_buffer (GTK_TEXT_VIEW (data->streams_list));
-  gtk_text_buffer_set_text (text, "", -1);
-   
-  /* Read some properties */
-  g_object_get (data->playbin2, "n-video", &n_video, NULL);
-  g_object_get (data->playbin2, "n-audio", &n_audio, NULL);
-  g_object_get (data->playbin2, "n-text", &n_text, NULL);
-   
-  for (i = 0; i < n_video; i++) {
-    tags = NULL;
-    /* Retrieve the stream's video tags */
-    g_signal_emit_by_name (data->playbin2, "get-video-tags", i, &tags);
-    if (tags) {
-      total_str = g_strdup_printf ("video stream %d:\n", i);
-      gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-      g_free (total_str);
-      gst_tag_list_get_string (tags, GST_TAG_VIDEO_CODEC, &str);
-      total_str = g_strdup_printf ("  codec: %s\n", str ? str : "unknown");
-      gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-      g_free (total_str);
-      g_free (str);
-      gst_tag_list_free (tags);
-    }
-  }
-   
-  for (i = 0; i < n_audio; i++) {
-    tags = NULL;
-    /* Retrieve the stream's audio tags */
-    g_signal_emit_by_name (data->playbin2, "get-audio-tags", i, &tags);
-    if (tags) {
-      total_str = g_strdup_printf ("\naudio stream %d:\n", i);
-      gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-      g_free (total_str);
-      if (gst_tag_list_get_string (tags, GST_TAG_AUDIO_CODEC, &str)) {
-        total_str = g_strdup_printf ("  codec: %s\n", str);
-        gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-        g_free (total_str);
-        g_free (str);
-      }
-      if (gst_tag_list_get_string (tags, GST_TAG_LANGUAGE_CODE, &str)) {
-        total_str = g_strdup_printf ("  language: %s\n", str);
-        gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-        g_free (total_str);
-        g_free (str);
-      }
-      if (gst_tag_list_get_uint (tags, GST_TAG_BITRATE, &rate)) {
-        total_str = g_strdup_printf ("  bitrate: %d\n", rate);
-        gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-        g_free (total_str);
-      }
-      gst_tag_list_free (tags);
-    }
-  }
-   
-  for (i = 0; i < n_text; i++) {
-    tags = NULL;
-    /* Retrieve the stream's subtitle tags */
-    g_signal_emit_by_name (data->playbin2, "get-text-tags", i, &tags);
-    if (tags) {
-      total_str = g_strdup_printf ("\nsubtitle stream %d:\n", i);
-      gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-      g_free (total_str);
-      if (gst_tag_list_get_string (tags, GST_TAG_LANGUAGE_CODE, &str)) {
-        total_str = g_strdup_printf ("  language: %s\n", str);
-        gtk_text_buffer_insert_at_cursor (text, total_str, -1);
-        g_free (total_str);
-        g_free (str);
-      }
-      gst_tag_list_free (tags);
-    }
-  }
-}
-   
-/* This function is called when an "application" message is posted on the bus.
- * Here we retrieve the message posted by the tags_cb callback */
-static void application_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
-  if (g_strcmp0 (gst_structure_get_name (msg->structure), "tags-changed") == 0) {
-    /* If the message is the "tags-changed" (only one we are currently issuing), update
-     * the stream info GUI */
-    analyze_streams (data);
   }
 }
 
