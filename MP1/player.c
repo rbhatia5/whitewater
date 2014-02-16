@@ -78,12 +78,15 @@ static void fileopen_cb (GtkButton *button, CustomData *data) {
   	{
     char *filename;
     filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-    g_print("Filename read %s",filename);
-    
-    g_object_set (data->playbin2, "uri", "file:///home/arora15/Downloads/cbw3.avi", NULL);
-    //File operations here
-    //open_file (filename);
-    //g_free (filename);
+    g_print("File path %s",filename);
+   	//File operations here
+   	char *final_path;
+   	final_path = malloc((strlen("file://")+strlen(filename)+1)*sizeof(char));
+   	strcat(final_path,"file://");
+   	strcat(final_path,filename);
+   	//change the playbin uri to play the selected file
+    g_object_set (data->playbin2, "uri", final_path, NULL);
+    g_free (filename);
   	}
 gtk_widget_destroy (dialog);
 gst_element_set_state (data->playbin2, GST_STATE_PLAYING);
