@@ -24,6 +24,8 @@ typedef struct _CustomData {
   GtkWindow *dialog_window;
   GstState state;                 /* Current state of the pipeline */
   gint64 duration;                /* Duration of the clip, in nanoseconds */
+  gdouble rate = 1; 
+
 } CustomData;
   
 static gboolean refresh_ui (CustomData *data);
@@ -92,6 +94,20 @@ gtk_widget_destroy (dialog);
 gst_element_set_state (data->playbin2, GST_STATE_PLAYING);
 }
 
+
+static void fastforward_cb (GtkButton *button, CustomData *data) {
+    g_print("FastFoward");
+}
+
+
+static void rewind_cb (GtkButton *button, CustomData *data) {
+    
+    g_print("Rewind");
+}
+
+
+
+
 /* This function is called when the main window is closed */
 static void delete_event_cb (GtkWidget *widget, GdkEvent *event, CustomData *data) {
   stop_cb (NULL, data);
@@ -135,7 +151,7 @@ static void create_ui (CustomData *data) {
   GtkWidget *main_box;     /* VBox to hold main_hbox and the controls */
   GtkWidget *main_hbox;    /* HBox to hold the video_window and the stream info text widget */
   GtkWidget *controls;     /* HBox to hold the buttons and the slider */
-  GtkWidget *play_button, *pause_button, *stop_button, *fileopen_button; /* Buttons */
+  GtkWidget *play_button, *pause_button, *stop_button, *fileopen_button, *fastforward_button, *fastrewind_button; /* Buttons */
   GtkWindow *dialog_window;
   main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   dialog_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -159,7 +175,13 @@ static void create_ui (CustomData *data) {
    
   stop_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_STOP);
   g_signal_connect (G_OBJECT (stop_button), "clicked", G_CALLBACK (stop_cb), data);
-  
+ 
+  fastforward_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_FORWARD);
+  g_signal_connect (G_OBJECT (fastforward_button), "clicked", G_CALLBACK (fastforward_cb), data);
+
+  fastrewind_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_REWIND);
+  g_signal_connect (G_OBJECT (fastrewind_button), "clicked", G_CALLBACK (rewind_cb), data);
+
   //Button to open file
   fileopen_button = gtk_button_new_with_label ("Open File");
   g_signal_connect (G_OBJECT (fileopen_button), "clicked", G_CALLBACK (fileopen_cb), data);
@@ -172,9 +194,12 @@ static void create_ui (CustomData *data) {
   gtk_text_view_set_editable (GTK_TEXT_VIEW (data->streams_list), FALSE);
    
   controls = gtk_hbox_new (FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (controls), fastrewind_button, FALSE, FALSE, 2);
   gtk_box_pack_start (GTK_BOX (controls), play_button, FALSE, FALSE, 2);
   gtk_box_pack_start (GTK_BOX (controls), pause_button, FALSE, FALSE, 2);
   gtk_box_pack_start (GTK_BOX (controls), stop_button, FALSE, FALSE, 2);
+  gtk_box_pack_start (GTK_BOX (controls), fastforward_button, FALSE, FALSE, 2);
+  gtk_box_pack_start (GTK_BOX (controls), play_button, FALSE, FALSE, 2);
   gtk_box_pack_start (GTK_BOX (controls), fileopen_button, FALSE, FALSE, 2);
   gtk_box_pack_start (GTK_BOX (controls), data->slider, TRUE, TRUE, 2);
    
