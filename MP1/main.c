@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
   g_signal_connect (G_OBJECT (bus), "message::error", (GCallback)error_cb, &data);
   g_signal_connect (G_OBJECT (bus), "message::eos", (GCallback)eos_cb, &data);
   g_signal_connect (G_OBJECT (bus), "message::state-changed", (GCallback)state_changed_cb, &data);
+   gst_bus_set_sync_handler (bus, (GstBusSyncHandler) bus_sync_handler, NULL);
   //g_signal_connect (G_OBJECT (bus), "message::application", (GCallback)application_cb, &data);
   gst_object_unref (bus);
    
