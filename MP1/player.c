@@ -20,35 +20,56 @@ typedef struct _CustomData {
   GtkWidget *slider;              /* Slider widget to keep track of current position */
   GtkWidget *streams_list;        /* Text widget to display info about the streams */
   gulong slider_update_signal_id; /* Signal ID for the slider update signal */
-  GtkWidget *main_window;		  /* Main window of the UI */
+  GtkWidget *video_window;		  /* Main window of the UI */
   GtkWindow *dialog_window;
   GstState state;                 /* Current state of the pipeline */
   gint64 duration;                /* Duration of the clip, in nanoseconds */
-  gdouble rate = 1; 
-
+  gdouble rate;
 } CustomData;
   
+static guintptr video_window_xid = 0;
+
 static gboolean refresh_ui (CustomData *data);
 /* This function is called when the GUI toolkit creates the physical window that will hold the video.
  * At this point we can retrieve its handler (which has a different meaning depending on the windowing system)
  * and pass it to GStreamer through the XOverlay interface. */
+
+
+
+static GstBusSyncReply
+bus_sync_handler (GstBus * bus, GstMessage * message, gpointer user_data)
+{
+ // ignore anything but 'prepare-xwindow-id' element messages
+ if (GST_MESSAGE_TYPE (message) != GST_MESSAGE_ELEMENT)
+   return GST_BUS_PASS;
+ if (!gst_structure_has_name (message->structure, "prepare-xwindow-id"))
+   return GST_BUS_PASS;
+
+ if (video_window_xid != 0) {
+
+
+   // GST_MESSAGE_SRC (message) will be the video sink element
+  
+   gst_x_overlay_set_xwindow_id (GST_X_OVERLAY (GST_MESSAGE_SRC (message)), video_window_xid);
+ } else {
+   g_warning ("Should have obtained video_window_xid by now!");
+ }
+
+ gst_message_unref (message);
+ return GST_BUS_DROP;
+}
+
 static void realize_cb (GtkWidget *widget, CustomData *data) {
-  GdkWindow *window = gtk_widget_get_window (widget);
-  guintptr window_handle;
-   
-  if (!gdk_window_ensure_native (window))
+#if GTK_CHECK_VERSION(2,18,0)
+  // This is here just for pedagogical purposes, GDK_WINDOW_XID will call
+  // it as well in newer Gtk versions
+  if (!gdk_window_ensure_native (widget->window))
     g_error ("Couldn't create native window needed for GstXOverlay!");
-   
-  /* Retrieve window handler from GDK */
-#if defined (GDK_WINDOWING_WIN32)
-  window_handle = (guintptr)GDK_WINDOW_HWND (window);
-#elif defined (GDK_WINDOWING_QUARTZ)
-  window_handle = gdk_quartz_window_get_nsview (window);
-#elif defined (GDK_WINDOWING_X11)
-  window_handle = GDK_WINDOW_XID (window);
 #endif
-  /* Pass it to playbin2, which implements XOverlay and will forward it to the video sink */
-  //gst_x_overlay_set_window_handle (GST_X_OVERLAY (data->playbin2), window_handle);
+
+#ifdef GDK_WINDOWING_X11
+  video_window_xid = GDK_WINDOW_XID (gtk_widget_get_window (data->video_window));
+#endif
 }
    
 /* This function is called when the PLAY button is clicked */
@@ -159,6 +180,7 @@ static void create_ui (CustomData *data) {
   main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   dialog_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   data->dialog_window = dialog_window;
+  
   //setting player properties
   gtk_window_set_title(GTK_WINDOW(main_window), "CS 414 MP 1 Player");
   g_signal_connect (G_OBJECT (main_window), "delete-event", G_CALLBACK (delete_event_cb), data);
@@ -166,6 +188,7 @@ static void create_ui (CustomData *data) {
   gtk_window_set_position(GTK_WINDOW(main_window), GTK_WIN_POS_CENTER);
   
   video_window = gtk_drawing_area_new ();
+  data->video_window = video_window;
   gtk_widget_set_double_buffered (video_window, FALSE);
   g_signal_connect (video_window, "realize", G_CALLBACK (realize_cb), data);
   g_signal_connect (video_window, "expose_event", G_CALLBACK (expose_cb), data);
@@ -215,8 +238,21 @@ static void create_ui (CustomData *data) {
   gtk_box_pack_start (GTK_BOX (main_box), controls, FALSE, FALSE, 0);
   gtk_container_add (GTK_CONTAINER (main_window), main_box);
   gtk_window_set_default_size (GTK_WINDOW (main_window), 640, 480);
-   
+  
+  // usually the video_window will not be directly embedded into the
+  // application window like this, but there will be many other widgets
+  // and the video window will be embedded in one of them instead
+  gtk_container_add (GTK_CONTAINER (main_window), video_window);
+  
   gtk_widget_show_all (main_window);
+  // realize window now so that the video window gets created and we can
+  // obtain its XID before the pipeline is started up and the videosink
+  // asks for the XID of the window to render onto
+  gtk_widget_realize (video_window);
+
+  // we should have the XID now
+  g_assert (video_window_xid != 0);
+  
 }
    
 /* This function is called periodically to refresh the GUI */
