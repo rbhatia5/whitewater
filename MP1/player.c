@@ -16,7 +16,7 @@
 /* Structure to contain all our information, so we can pass it around */
 typedef struct _CustomData {
   GstElement *playbin2;           /* Our one and only pipeline */
-   
+  GstElement *video_sink;         /* Storage for the video sink */ 
   GtkWidget *slider;              /* Slider widget to keep track of current position */
   GtkWidget *streams_list;        /* Text widget to display info about the streams */
   gulong slider_update_signal_id; /* Signal ID for the slider update signal */
@@ -26,6 +26,8 @@ typedef struct _CustomData {
   gint64 duration;                /* Duration of the clip, in nanoseconds */
   gdouble rate;
 } CustomData;
+
+static void send_seek_event (CustomData *);
   
 static guintptr video_window_xid = 0;
 
@@ -120,18 +122,28 @@ gst_element_set_state (data->playbin2, GST_STATE_PLAYING);
 
 
 static void fastforward_cb (GtkButton *button, CustomData *data) {
-    g_print("FastFoward");
+    //g_print("FastFowardActivated!\n");
+
+    if(data->rate != 2.0)
+        data->rate = 2.0;
+    else
+        data->rate = 1.0;
+
+    send_seek_event(data);
 }
 
 
 static void rewind_cb (GtkButton *button, CustomData *data) {
     
-    g_print("Rewind");
+    //g_print("RewindActivated!\n");
+    
+    if(data->rate != -2.0)
+        data->rate = -2.0;
+    else
+        data->rate = 1.0;
+
+    send_seek_event(data);
 }
-
-
-
-
 /* This function is called when the main window is closed */
 static void delete_event_cb (GtkWidget *widget, GdkEvent *event, CustomData *data) {
   stop_cb (NULL, data);
@@ -331,5 +343,38 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
       refresh_ui (data);
     }
   }
+}
+
+
+/* Used by fast forward and fast rewind functions to change advance rate.  */
+static void send_seek_event (CustomData *data) {
+  gint64 position;
+  GstFormat format = GST_FORMAT_TIME;
+  GstEvent *seek_event;
+   
+  /* Obtain the current position, needed for the seek event */
+  if (!gst_element_query_position (data->playbin2, &format, &position)) {
+    g_printerr ("Unable to retrieve current position.\n");
+    return;
+  }
+   
+  /* Create the seek event */
+  if (data->rate > 0) {
+    seek_event = gst_event_new_seek (data->rate, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+        GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
+  } else {
+    seek_event = gst_event_new_seek (data->rate, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+        GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_SET, position);
+  }
+   
+  if (data->video_sink == NULL) {
+    /* If we have not done so, obtain the sink through which we will send the seek events */
+    g_object_get (data->playbin2, "video-sink", &data->video_sink, NULL);
+  }
+   
+  /* Send the event */
+  gst_element_send_event (data->video_sink, seek_event);
+   
+  g_print ("Current rate: %g\n", data->rate);
 }
 

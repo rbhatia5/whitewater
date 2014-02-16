@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
   /* Initialize our data structure */
   memset (&data, 0, sizeof (data));
   data.duration = GST_CLOCK_TIME_NONE;
-   
+  data.rate = 1; 
   /* Create the elements */
   data.playbin2 = gst_element_factory_make ("playbin2", "playbin2");
     
