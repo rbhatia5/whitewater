@@ -76,6 +76,9 @@ static void realize_cb (GtkWidget *widget, CustomData *data) {
    
 /* This function is called when the PLAY button is clicked */
 static void play_cb (GtkButton *button, CustomData *data) {
+  data->rate = 1.0;
+  send_seek_event(data);
+  
   gst_element_set_state (data->playbin2, GST_STATE_PLAYING);
 }
    
@@ -116,6 +119,9 @@ static void fileopen_cb (GtkButton *button, CustomData *data) {
     g_object_set (data->playbin2, "uri", final_path, NULL);
     g_free (filename);
   	}
+  	
+  	data->rate = GST_CLOCK_TIME_NONE;
+	
 gtk_widget_destroy (dialog);
 gst_element_set_state (data->playbin2, GST_STATE_PLAYING);
 }
@@ -124,10 +130,8 @@ gst_element_set_state (data->playbin2, GST_STATE_PLAYING);
 static void fastforward_cb (GtkButton *button, CustomData *data) {
     //g_print("FastFowardActivated!\n");
 
-    if(data->rate != 2.0)
-        data->rate = 2.0;
-    else
-        data->rate = 1.0;
+        data->rate *= 2.0;
+
 
     send_seek_event(data);
 }
@@ -137,10 +141,10 @@ static void rewind_cb (GtkButton *button, CustomData *data) {
     
     //g_print("RewindActivated!\n");
     
-    if(data->rate != -2.0)
-        data->rate = -2.0;
+    if(data->rate > 0)
+        data->rate = -1.0;
     else
-        data->rate = 1.0;
+        data->rate *= 2.0;
 
     send_seek_event(data);
 }
@@ -278,6 +282,8 @@ static gboolean refresh_ui (CustomData *data) {
    
   /* If we didn't know it yet, query the stream duration */
   if (!GST_CLOCK_TIME_IS_VALID (data->duration)) {
+    g_print("duration was invalid\n");
+    
     if (!gst_element_query_duration (data->playbin2, &fmt, &data->duration)) {
       g_printerr ("Could not query current duration.\n");
     } else {
@@ -340,7 +346,7 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
     g_print ("State set to %s\n", gst_element_state_get_name (new_state));
     if (old_state == GST_STATE_READY && new_state == GST_STATE_PAUSED) {
       /* For extra responsiveness, we refresh the GUI as soon as we reach the PAUSED state */
-      refresh_ui (data);
+      refresh_ui (&data);
     }
   }
 }
