@@ -26,7 +26,10 @@ int main(int argc, char *argv[]) {
   /* Set the URI to play */
   g_object_set (data.playbin2, "uri", "http://docs.gstreamer.com/media/sintel_trailer-480p.webm", NULL);
    
-   
+   /* Connect to interesting signals in playbin2 */
+  g_signal_connect (G_OBJECT (data.playbin2), "video-tags-changed", (GCallback) tags_cb, &data);
+  g_signal_connect (G_OBJECT (data.playbin2), "audio-tags-changed", (GCallback) tags_cb, &data);
+  g_signal_connect (G_OBJECT (data.playbin2), "text-tags-changed", (GCallback) tags_cb, &data);
   /* Create the GUI */
   create_ui (&data);
    
@@ -37,7 +40,7 @@ int main(int argc, char *argv[]) {
   g_signal_connect (G_OBJECT (bus), "message::eos", (GCallback)eos_cb, &data);
   g_signal_connect (G_OBJECT (bus), "message::state-changed", (GCallback)state_changed_cb, &data);
    gst_bus_set_sync_handler (bus, (GstBusSyncHandler) bus_sync_handler, NULL);
-  //g_signal_connect (G_OBJECT (bus), "message::application", (GCallback)application_cb, &data);
+  g_signal_connect (G_OBJECT (bus), "message::application", (GCallback)application_cb, &data);
   gst_object_unref (bus);
    
   /* Start playing */
