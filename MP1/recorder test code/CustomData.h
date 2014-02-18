@@ -8,6 +8,8 @@
 static gintptr video_window_xid = 0;
 static gboolean change_request = FALSE;
 
+typedef enum {STREAM, RECORD_VIDEO, RECORD_AUDIO} mode;
+
 typedef struct _CustomData
 {
 	GstBus *bus;
@@ -24,6 +26,5 @@ typedef struct _CustomData
 	GstElement *player_queue;
 	GstElement *file_queue;
 	GstState state;
+	mode Mode;
 } CustomData;
-
-//extern CustomData data;

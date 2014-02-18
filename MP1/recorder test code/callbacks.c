@@ -1,4 +1,6 @@
-#include "custom_pipeline.cpp"
+#include "custom_pipeline.c"
+
+static void attach_bus_cb();
 
 static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message)
 {
@@ -29,15 +31,6 @@ static void delete_event_cb(GtkWidget * widget, GdkEvent * eventt)
 
 static void post_message();
 
-static void record_cb(GtkWidget* widget, GdkEvent * eventt)
-{
-	disassemble_pipeline();
-	assemble_pipeline_with_record();
-	data.bus = gst_pipeline_get_bus (GST_PIPELINE (data.pipeline));
-	gst_bus_set_sync_handler (data.bus, (GstBusSyncHandler) bus_sync_handler,NULL);
-	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
-}
-
 static void play_cb(GtkWidget* widget, GdkEvent * eventt)
 {
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
@@ -51,9 +44,10 @@ static void pause_cb(GtkWidget* widget, GdkEvent * eventt)
 static void stop_cb(GtkWidget* widget, GdkEvent * eventt)
 {
 	disassemble_pipeline();
-	assemble_pipeline_without_record();
-	data.bus = gst_pipeline_get_bus (GST_PIPELINE (data.pipeline));
-	gst_bus_set_sync_handler (data.bus, (GstBusSyncHandler) bus_sync_handler,NULL);
+	//assemble_pipeline_without_record();
+	data.Mode = STREAM;
+	assemble_pipeline();
+	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
 
@@ -99,6 +93,49 @@ static void state_changed_cb(GstBus *bus, GstMessage * msg)
 	}
 }
 
+static void application_cb(GstBus *bus, GstMessage *msg)
+{
+	g_print("Pipeline modify request QUITTED\n");
+	if (g_strcmp0 (gst_structure_get_name (msg->structure), "tags-changed") == 0) 
+	{
+		gtk_main_quit();
+		g_print("Pipeline modify request QUITTED\n");
+	}
+}
+
+static void attach_bus_cb()
+{
+	//attach handler to assign window xid to stream to window
+	data.bus = gst_pipeline_get_bus (GST_PIPELINE (data.pipeline));
+	gst_bus_set_sync_handler (data.bus, (GstBusSyncHandler) bus_sync_handler,NULL);
+	//register messages
+	gst_bus_add_signal_watch(data.bus);
+
+	//signals we want to connect to
+	g_signal_connect(data.bus, "message::error", G_CALLBACK(error_cb),NULL);
+	g_signal_connect(data.bus, "message::eos", G_CALLBACK(eos_cb),NULL);
+	g_signal_connect(data.bus, "message::state-changed", G_CALLBACK(state_changed_cb),NULL);
+	g_signal_connect(data.bus, "message::application", G_CALLBACK(application_cb),NULL);
+}
+
+static void record_audio_cb(GtkWidget* widget, GdkEvent * eventt)
+{
+	disassemble_pipeline();
+	data.Mode = RECORD_AUDIO;
+	assemble_pipeline();
+	//attach_bus_cb();
+	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+}
+
+static void record_video_cb(GtkWidget* widget, GdkEvent * eventt)
+{
+	disassemble_pipeline();
+	data.Mode = RECORD_VIDEO;
+	assemble_pipeline();
+	attach_bus_cb();
+	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+}
+
 //when the window gets created the first time, we need to give the xoverlay interface of the pipeline the window handle so it can sink
 //into it
 static void realize_cb(GtkWidget *widget)
@@ -110,43 +147,6 @@ static void realize_cb(GtkWidget *widget)
 	if(!gdk_window_ensure_native(window))
 		g_printerr("Not a native window!\n");
 
-	//get handle
-	//data->window_handle = window_handle;
-	//attach to pipeline
+	//get handle and attach to pipeline
 	video_window_xid = (gintptr)GDK_WINDOW_HWND (window);
-	//g_print("OUT//Window ID is: %d\n", data->window_handle);
-	//g_print("OUT//Window ID is: %d\n", video_window_xid);
-}
-
-static void application_cb(GstBus *bus, GstMessage *msg)
-{
-	g_print("Pipeline modify request QUITTED\n");
-	if (g_strcmp0 (gst_structure_get_name (msg->structure), "tags-changed") == 0) 
-	{
-		gtk_main_quit();
-		g_print("Pipeline modify request QUITTED\n");
-		//test pipeline switch//////////////////////////////////////////////
-		//gst_element_set_state (data->pipeline, GST_STATE_NULL);
-		//gst_object_unref(data->pipeline);
-		//data->pipeline = gst_pipeline_new("test-pipeline");
-		//data->source = gst_element_factory_make("videotestsrc","source");		
-		//data->sink = gst_element_factory_make("d3dvideosink", "sink");
-		//g_object_set (data->source, "pattern", 0, NULL);
-		//gst_bin_add_many(GST_BIN(data->pipeline), data->source, data->sink, NULL);
-		//gst_element_link(data->source, data->sink);
-		//// set up sync handler for setting the xid once the pipeline is started
-		//bus = gst_pipeline_get_bus (GST_PIPELINE (data->pipeline));
-		//gst_bus_set_sync_handler (bus, (GstBusSyncHandler) bus_sync_handler, &data);
-		//////register messages
-		////gst_bus_add_signal_watch(bus);
-		//////signals we want to connect to
-		////g_signal_connect(bus, "message::error", G_CALLBACK(error_cb),&data);
-		////g_signal_connect(bus, "message::eos", G_CALLBACK(eos_cb),&data);
-		////g_signal_connect(bus, "message::state-changed", G_CALLBACK(state_changed_cb),&data);
-		////g_signal_connect(bus, "message::application", G_CALLBACK(application_cb),&data);
-		//gst_object_unref (bus);
-		//gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
-		//gtk_main();
-		//////////////////////////////////////////////////////////////////////		
-	}
 }
