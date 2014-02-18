@@ -81,7 +81,6 @@ static void state_changed_cb(GstBus *bus, GstMessage * msg)
 		g_print("State change from %s to %s\n", gst_element_state_get_name(old_state), gst_element_state_get_name(new_state));
 		data.state = new_state;
 	}
-	g_print("%d\n", change_request);
 	if(change_request)
 	{
 		g_print("Pipeline modify request\n");
@@ -149,4 +148,31 @@ static void realize_cb(GtkWidget *widget)
 
 	//get handle and attach to pipeline
 	video_window_xid = (gintptr)GDK_WINDOW_HWND (window);
+}
+
+static void audio_encoding_cb(GtkWidget* widget, GdkEvent * eventt)
+{
+	if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(audio_mulaw))==TRUE)
+	{
+		data.audio_encoder = MULAW;
+	}
+	else if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(audio_alaw))==TRUE)
+	{
+		data.audio_encoder = ALAW;
+	}
+}
+
+static void video_encoding_cb(GtkWidget* widget, GdkEvent * eventt)
+{
+	g_print("GOT HERE\n");
+	if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(video_mjpeg))==TRUE)
+	{
+		g_print("CHANGING TO MJPEG\n");
+		data.video_encoder = MJPEG;
+	}
+	else if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(video_mpeg))==TRUE)
+	{
+		g_print("CHANGING TO MPEG\n");
+		data.video_encoder = MPEG;
+	}
 }

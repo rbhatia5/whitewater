@@ -11,7 +11,7 @@ int main(int argc, char * argv[])
 	memset(&data,0,sizeof(data));
 	
 	data.Mode = STREAM;
-
+	data.audio_encoder = ALAW;
 	create_ui();
 
 	assemble_pipeline();
@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
 
 	gtk_main();
 
-	//disassemble_pipeline();
+	disassemble_pipeline();
 	
 	gst_element_set_state(data.pipeline, GST_STATE_NULL);
 	gst_object_unref(data.pipeline);

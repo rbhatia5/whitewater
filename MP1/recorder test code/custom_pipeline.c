@@ -51,6 +51,7 @@ static void assemble_pipeline()
 				"video/x-raw-yuv", 
 				"width", G_TYPE_INT, 320, 
 				"height", G_TYPE_INT, 240, 
+				"framerate", GST_TYPE_FRACTION, 16/1,
 				NULL);
 			if(!data.enc_caps)
 			{
@@ -65,7 +66,17 @@ static void assemble_pipeline()
 				g_print("COLORSPACE FAILED.\n");
 			}
 
-			data.encoder = gst_element_factory_make("jpegenc", "encoder");
+			switch(data.audio_encoder)
+			{
+				case MJPEG:
+					data.encoder = gst_element_factory_make("jpegenc", "encoder");
+					break;
+				case MPEG:
+					data.encoder = gst_element_factory_make("jpegenc", "encoder");
+					break;
+				default:
+					break;
+			}
 			if(!data.encoder)
 			{
 				ret = FALSE;
@@ -113,9 +124,10 @@ static void assemble_pipeline()
 			gst_object_unref (queue_file_pad);
 			gst_object_unref (queue_player_pad);
 			break;
+
 		case RECORD_AUDIO:
 			g_print("RECORDING AUDIO.\n");
-			data.source = gst_element_factory_make("autoaudiosrc", "source");
+			data.source = gst_element_factory_make("audiotestsrc", "source");
 			if(!data.source)
 			{
 				ret = FALSE;
@@ -132,7 +144,17 @@ static void assemble_pipeline()
 				g_print("Caps structure could not be initialized.\n");
 			}
 
-			data.encoder = gst_element_factory_make("mulawenc", "encoder");
+			switch(data.audio_encoder)
+			{
+				case MULAW:
+					data.encoder = gst_element_factory_make("mulawenc", "encoder");
+					break;
+				case ALAW:
+					data.encoder = gst_element_factory_make("alawenc", "encoder");
+					break;
+				default:
+					break;
+			}
 			if(!data.encoder)
 			{
 				ret = FALSE;
@@ -145,7 +167,21 @@ static void assemble_pipeline()
 				ret = FALSE;
 				g_print("FSINK FAILED.\n");
 			}
-			g_object_set(G_OBJECT(data.sink), "location", "1.ulaw",NULL);
+			switch(data.audio_encoder)
+			{
+				case MULAW:
+					g_object_set(G_OBJECT(data.sink), "location", "1.mulaw",NULL);
+					break;
+				case ALAW:
+					g_object_set(G_OBJECT(data.sink), "location", "1.alaw",NULL);
+					break;
+				default:
+					break;
+			}
+			
+			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.encoder, data.sink, NULL);
+			gst_element_link_filtered (data.source, data.encoder, data.enc_caps);
+			gst_element_link_many(data.encoder, data.sink, NULL);
 			break;
 		default:
 			break;
