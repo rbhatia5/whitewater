@@ -8,6 +8,7 @@ static void create_ui()
 	GtkWidget *main_box;
 	GtkWidget *main_hbox;
 	GtkWidget *controls;
+	GtkWidget *slider;
 	GtkWidget *radio_hbox;
 	GtkWidget *audio_vbox;
 	GtkWidget *video_vbox;
@@ -36,8 +37,10 @@ static void create_ui()
 	//initialize the buttons, attach callbacks
 	record_video_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
 	g_signal_connect(record_video_button, "clicked", G_CALLBACK(record_video_cb), NULL);
+	gtk_button_set_label(record_video_button, "Record Video");
 	record_audio_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
 	g_signal_connect(record_audio_button, "clicked", G_CALLBACK(record_audio_cb), NULL);
+	gtk_button_set_label(record_audio_button, "Record Audio");
 	play_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
 	g_signal_connect(play_button, "clicked", G_CALLBACK(play_cb), NULL);
 	pause_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PAUSE);
@@ -69,6 +72,7 @@ static void create_ui()
 	audio_radio_buttons = gtk_radio_button_get_group (GTK_RADIO_BUTTON (audio_encoding_1));
 	audio_encoding_2 = gtk_radio_button_new_with_label (audio_radio_buttons, "a-law");
 	audio_alaw = audio_encoding_2;
+	audio_radio_buttons = gtk_radio_button_get_group (GTK_RADIO_BUTTON (audio_encoding_1));
 	audio_encoding_3 = gtk_radio_button_new_with_label (audio_radio_buttons, "mkv");
 	audio_mkv = audio_encoding_3;
 	g_signal_connect(audio_encoding_1, "toggled", G_CALLBACK(audio_encoding_cb), NULL);
@@ -110,7 +114,10 @@ static void create_ui()
     gtk_box_pack_start (GTK_BOX (controls), fileopen_button, FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(controls), record_video_button, FALSE, FALSE, 2);
 	gtk_box_pack_start(GTK_BOX(controls), record_audio_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), data.slider, TRUE, TRUE, 2);
+    //gtk_box_pack_start (GTK_BOX (controls), data.slider, TRUE, TRUE, 2);
+
+    slider = gtk_hbox_new(FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (slider), data.slider, TRUE, TRUE, 2);
 
 	//initialize main hbox to hold video
 	main_hbox = gtk_hbox_new(FALSE, 0);
@@ -122,6 +129,7 @@ static void create_ui()
 	gtk_box_pack_start(GTK_BOX(main_box), radio_hbox, FALSE, FALSE, 2);
 	gtk_box_pack_start(GTK_BOX(main_box), main_hbox, TRUE, TRUE, 2);
 	gtk_box_pack_start(GTK_BOX(main_box), controls, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(main_box), slider, FALSE, FALSE, 2);
 
 	// usually the video_window will not be directly embedded into the
 	// application window like this, but there will be many other widgets
