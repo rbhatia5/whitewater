@@ -59,7 +59,6 @@ static void pause_cb(GtkWidget* widget, GdkEvent * eventt)
 static void stop_cb(GtkWidget* widget, GdkEvent * eventt)
 {
 	disassemble_pipeline();
-	//assemble_pipeline_without_record();
 	data.Mode = STREAM;
 	assemble_pipeline();
 	attach_bus_cb();
@@ -83,6 +82,15 @@ static void eos_cb(GstBus * bus, GstMessage * msg)
 {
 	g_print("Reached End of Stream\n");
 	gst_element_set_state(data.pipeline, GST_STATE_READY);
+	if(data.Mode == PLAYER)
+	{
+	    data.Mode = STREAM;
+	}
+	disassemble_pipeline();
+	data.Mode = STREAM;
+	assemble_pipeline();
+	attach_bus_cb();
+	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
 
 //change of state handler
@@ -217,7 +225,7 @@ static void fileopen_cb (GtkButton *button)
     disassemble_pipeline();
 	data.Mode = PLAYER;
 	assemble_pipeline();
-	//g_object_set (data.source, "location", filename, NULL);
+	g_object_set (data.source, "location", filename, NULL);
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
