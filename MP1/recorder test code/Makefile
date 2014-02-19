@@ -1,5 +1,5 @@
-# Ramit Arora
-# CS 414 MP1
+# Ramit Arora 
+# CS 414 MP1 Webcam Makefile
 # University of Illinois
 # refer Makefile tutorial: http://maemo.org/development/training/maemo_application_development_content/plain_html/node4/
 
@@ -31,21 +31,20 @@ LDFLAGS := $(PKG_LDFLAGS) $(LDFLAGS)
 .PHONY : all
 all: clean webcam
 
-webcam: callbacks.o webcam.o custom_pipeline.o GTK_UI.o
-	$(CC) $^ -o $@ $(LDFLAGS)
+webcam: callbacks.o custom_pipeline.o GTK_UI.o webcam.o
+	$(CC) $^ -o $@ -ggdb $(LDFLAGS)
 
-webcam.o: webcam.c GTK_UI.c	
-	$(CC) $(CFLAGS) -c $< -o $@
-	
-callbacks.o: callbacks.c custom_pipeline.c GTK_UI.c
-	$(CC) $(CFLAGS) -c $< -o $@
-	
+callbacks.o: callbacks.c
+	$(CC) $(CFLAGS) -c $< -o $@	
 
 custom_pipeline.o: custom_pipeline.c
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 
-GTK_UI.o: GTK_UI.c callbacks.c
+GTK_UI.o: GTK_UI.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+webcam.o: webcam.c	
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 .PHONY : clean
