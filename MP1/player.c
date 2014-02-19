@@ -15,7 +15,7 @@
    
 /* Structure to contain all our information, so we can pass it around */
 typedef struct _CustomData {
-  GstElement *pipeline, *src, *decode, *appsink;           /* Our one and only pipeline */
+  GstElement *pipeline, *src, *decode, *videosink, *audiosink;           /* Our one and only pipeline */
   GstElement *video_sink;         /* Storage for the video sink */ 
   GtkWidget *slider;              /* Slider widget to keep track of current position */
   GtkWidget *streams_list;        /* Text widget to display info about the streams */

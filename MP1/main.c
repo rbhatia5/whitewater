@@ -47,12 +47,12 @@ int main(int argc, char *argv[]) {
   gst_object_unref (bus);
    
   /* Start playing */
-  ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);
-  if (ret == GST_STATE_CHANGE_FAILURE) {
+  //ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);
+  /*if (ret == GST_STATE_CHANGE_FAILURE) {
     g_printerr ("Unable to set the pipeline to the playing state.\n");
     gst_object_unref (data.pipeline);
     return -1;
-  }
+  }*/
    
   /* Register a function that GLib will call every second */
   g_timeout_add_seconds (1, (GSourceFunc)refresh_ui, &data);
@@ -72,7 +72,7 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad,gboolean b,  Cus
 
   
 
-  GstPad *sink_pad = gst_element_get_static_pad (data->appsink, "sink");
+  GstPad *sink_pad = gst_element_get_static_pad (data->videosink, "sink");
   GstPadLinkReturn ret;
   GstCaps *new_pad_caps = NULL;
   GstStructure *new_pad_struct = NULL;
@@ -92,9 +92,33 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad,gboolean b,  Cus
   new_pad_type = gst_structure_get_name (new_pad_struct);
   if (!g_str_has_prefix (new_pad_type, "video/x-raw")) {
     g_print ("  It has type '%s' which is not raw video. Ignoring.\n", new_pad_type);
-    goto exit;
+    //goto exit;
   }
-   
+  else {
+	ret = gst_pad_link (new_pad, sink_pad);
+	if (GST_PAD_LINK_FAILED (ret)) {
+    		g_print ("  Type is '%s' but link failed.\n", new_pad_type);
+  	} else {
+    		g_print ("  Link succeeded (type '%s').\n", new_pad_type);
+  	}
+  }
+
+  if (!g_str_has_prefix (new_pad_type, "audio/x-raw-int")) {
+    g_print ("  It has type '%s' which is not raw audio. Ignoring.\n", new_pad_type);
+    //goto exit;
+  }
+  else {
+	sink_pad = gst_element_get_static_pad (data->audiosink, "sink");
+	ret = gst_pad_link (new_pad, sink_pad);
+	if (GST_PAD_LINK_FAILED (ret)) {
+    		g_print ("  Type is '%s' but link failed.\n", new_pad_type);
+  	} else {
+    		g_print ("  Link succeeded (type '%s').\n", new_pad_type);
+  	}
+  }
+
+
+	
   /* Attempt the link */
   ret = gst_pad_link (new_pad, sink_pad);
   if (GST_PAD_LINK_FAILED (ret)) {
@@ -121,16 +145,16 @@ int create_pipeline(CustomData * data)
    data->pipeline = gst_pipeline_new("test-pipeline");
    data->src = gst_element_factory_make("filesrc", "fileSource");
    data->decode = gst_element_factory_make("decodebin2", "decodebin2"); 
-   data->appsink = gst_element_factory_make("xvimagesink", "applicationsink");
-
-    if( data->pipeline == NULL || data->src == NULL || data->appsink == NULL)
+   data->videosink = gst_element_factory_make("xvimagesink", "applicationsink");
+   data->audiosink = gst_element_factory_make("alsasink", "audiosink");
+    if( data->pipeline == NULL || data->src == NULL || data->videosink == NULL)
         return -1;
-    g_object_set(data->src, "location", "/home/rbhatia5/Documents/School/cs414/whitewater/MP1/H264_test1_Talkinghead_mp4_480x360.mp4",NULL);
+    //g_object_set(data->src, "location", "/home/rbhatia5/Documents/School/cs414/whitewater/MP1/H264_test1_Talkinghead_mp4_480x360.mp4",NULL);
 
     //Add all my elements to the bin
-    gst_bin_add_many(GST_BIN(data->pipeline), data->src, data->decode, data->appsink, NULL);
-    gst_element_link_many(data->src, data->decode, data->appsink, NULL);
-    gst_element_set_state(data->pipeline, GST_STATE_PLAYING);
+    gst_bin_add_many(GST_BIN(data->pipeline), data->src, data->decode, data->videosink,data->audiosink, NULL);
+    gst_element_link_many(data->src, data->decode, NULL);
+    //gst_element_set_state(data->pipeline, GST_STATE_PLAYING);
     
     g_signal_connect(data->decode, "new-decoded-pad", G_CALLBACK (pad_added_handler), data);
 
