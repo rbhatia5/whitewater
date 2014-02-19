@@ -3,6 +3,7 @@
 int main(int argc, char * argv[])
 {
 	//declare elements
+	GstBus * bus;
 	GstMessage* msg;
 	GstStateChangeReturn ret;
 
@@ -13,25 +14,14 @@ int main(int argc, char * argv[])
 	data.Mode = STREAM;
 	data.audio_encoder = ALAW;
 	data.video_encoder = MJPEG;
-
-
-	data.enc_caps = gst_caps_new_simple (
-				"audio/x-raw-int", 
-				"rate", G_TYPE_INT, 44100, 
-				"channels", G_TYPE_INT, 1,
-				NULL);
-			if(!data.enc_caps)
-			{
-				ret = FALSE;
-				g_print("Caps structure could not be initialized.\n");
-			}
-
-	
+    
 	create_ui();
 
 	assemble_pipeline();
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);	
+
+    g_timeout_add_seconds (10, (GSourceFunc)refresh_ui, &data);
 
 	gtk_main();
 

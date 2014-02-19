@@ -1,6 +1,21 @@
 #include "custom_pipeline.c"
 
 static void attach_bus_cb();
+static void send_seek_event (); 
+static gboolean refresh_ui ();
+static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message);
+static void delete_event_cb(GtkWidget * widget, GdkEvent * eventt);
+static void play_cb(GtkWidget* widget, GdkEvent * eventt);
+static void pause_cb(GtkWidget* widget, GdkEvent * eventt);
+static void stop_cb(GtkWidget* widget, GdkEvent * eventt);
+static void error_cb(GstBus * bus, GstMessage * msg);
+static void state_changed_cb(GstBus *bus, GstMessage * msg);
+static void eos_cb(GstBus * bus, GstMessage * msg);
+static void record_audio_cb(GtkWidget* widget, GdkEvent * eventt);
+static void record_video_cb(GtkWidget* widget, GdkEvent * eventt);
+static void audio_encoding_cb(GtkWidget* widget, GdkEvent * eventt);
+static void realize_cb(GtkWidget *widget);
+static void application_cb (GstBus *bus, GstMessage *msg);
 
 static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message)
 {
@@ -59,7 +74,7 @@ static void error_cb(GstBus * bus, GstMessage * msg)
 	g_printerr("Error message received from %s: %s\n", GST_OBJECT_NAME(msg->src), err->message);
 	g_printerr("Debug Info: %s\n", debug_info ? debug_info : "none");
 	g_clear_error(&err);
-	g_free(&debug_info);
+	//g_free(&debug_info);
 
 	gst_element_set_state(data.pipeline, GST_STATE_READY);
 }
@@ -80,25 +95,10 @@ static void state_changed_cb(GstBus *bus, GstMessage * msg)
 	{
 		g_print("State change from %s to %s\n", gst_element_state_get_name(old_state), gst_element_state_get_name(new_state));
 		data.state = new_state;
-	}
-	if(change_request)
-	{
-		g_print("Pipeline modify request\n");
-		//handle the state change here. Post an application message to the bus to handle the switch of the pipeline
-		gst_element_post_message (data.pipeline, gst_message_new_application (GST_OBJECT (data.pipeline), gst_structure_new ("tags-changed", NULL)));
-		//gst_bus_post (bus, gst_message_new_application(GST_OBJECT_CAST (data->pipeline), gst_structure_new_empty ("ExPrerolled")));
-		change_request = FALSE;
-		//gst_structure_new_empty(
-	}
-}
-
-static void application_cb(GstBus *bus, GstMessage *msg)
-{
-	g_print("Pipeline modify request QUITTED\n");
-	if (g_strcmp0 (gst_structure_get_name (msg->structure), "tags-changed") == 0) 
-	{
-		gtk_main_quit();
-		g_print("Pipeline modify request QUITTED\n");
+		if (old_state == GST_STATE_READY && new_state == GST_STATE_PAUSED) 
+		{
+            refresh_ui (&data);
+        }
 	}
 }
 
@@ -161,6 +161,10 @@ static void audio_encoding_cb(GtkWidget* widget, GdkEvent * eventt)
 	{
 		data.audio_encoder = ALAW;
 	}
+	else if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(audio_mkv))==TRUE)
+	{
+		data.audio_encoder = MKV;
+	}
 }
 
 static void video_encoding_cb(GtkWidget* widget, GdkEvent * eventt)
@@ -176,4 +180,278 @@ static void video_encoding_cb(GtkWidget* widget, GdkEvent * eventt)
 		g_print("CHANGING TO MPEG\n");
 		data.video_encoder = MPEG;
 	}
+}
+
+
+//////////////////////////////////////////////////////player////////////////////////////////
+
+/* This function is called when the FILE OPEN button is clicked */
+static void fileopen_cb (GtkButton *button) 
+{
+    char *filename;
+    char *final_path;
+    int final_path_length ;
+  	GtkWidget *dialog;
+	
+	dialog = gtk_file_chooser_dialog_new ("Open File",
+				      data.dialog_window,
+				      GTK_FILE_CHOOSER_ACTION_OPEN,
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+				      NULL);
+	
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+  	{
+        filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+        g_print("File path %s \n",filename);
+   	    final_path_length = strlen("file://")+strlen(filename)+1;
+   	    final_path = malloc(final_path_length);
+   	    memset(final_path,0,final_path_length);
+   	    strcpy(final_path,"file://");
+   	    strcat(final_path,filename);
+       	g_print(final_path);
+    }
+  	data.rate = GST_CLOCK_TIME_NONE;
+	gtk_widget_destroy (dialog);
+    
+    disassemble_pipeline();
+	data.Mode = PLAYER;
+	assemble_pipeline();
+	//g_object_set (data.source, "location", filename, NULL);
+	attach_bus_cb();
+	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+}
+
+static void fastforward_cb (GtkButton *button) 
+{
+    data.rate *= 2.0;
+    send_seek_event(data);
+}
+
+
+static void rewind_cb (GtkButton *button) 
+{     
+    if(data.rate > 0)
+        data.rate = -1.0;
+    else
+        data.rate *= 2.0;
+}
+
+static gboolean expose_cb (GtkWidget *widget, GdkEventExpose *event) 
+{
+    if (data.state < GST_STATE_PAUSED) 
+    {
+        GtkAllocation allocation;
+        GdkWindow *window = gtk_widget_get_window (widget);
+        cairo_t *cr;
+         
+        /* Cairo is a 2D graphics library which we use here to clean the video window.
+         * It is used by GStreamer for other reasons, so it will always be available to us. */
+        gtk_widget_get_allocation (widget, &allocation);
+        cr = gdk_cairo_create (window);
+        cairo_set_source_rgb (cr, 0, 0, 0);
+        cairo_rectangle (cr, 0, 0, allocation.width, allocation.height);
+        cairo_fill (cr);
+        cairo_destroy (cr);
+    }   
+    return FALSE;
+}
+   
+/* This function is called when the slider changes its position. We perform a seek to the
+ * new position here. */
+static void slider_cb (GtkRange *range) 
+{
+    gdouble value = gtk_range_get_value (GTK_RANGE (data.slider));
+    gst_element_seek_simple (data.pipeline, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT,
+      (gint64)(value * GST_SECOND));
+}
+
+static void tags_cb (GstElement *pipeline, gint stream) 
+{
+    /* We are possibly in a GStreamer working thread, so we notify the main
+    * thread of this event through a message in the bus */
+    gst_element_post_message (pipeline,
+    gst_message_new_application (GST_OBJECT (pipeline),
+      gst_structure_new ("tags-changed", NULL)));
+}
+
+/* Used by fast forward and fast rewind functions to change advance rate.  */
+static void send_seek_event () 
+{
+    gint64 position;
+    GstFormat format = GST_FORMAT_TIME;
+    GstEvent *seek_event;
+   
+    /* Obtain the current position, needed for the seek event */
+    if (!gst_element_query_position (data.pipeline, &format, &position)) 
+    {
+       g_printerr ("Unable to retrieve current position.\n");
+       return;
+    }
+   
+    /* Create the seek event */
+    if (data.rate > 0) 
+    {
+        seek_event = gst_event_new_seek (data.rate, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+        GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
+    } else {
+        seek_event = gst_event_new_seek (data.rate, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+        GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_SET, position);
+    }
+   
+    if (data.video_sink == NULL) 
+    {
+        /* If we have not done so, obtain the sink through which we will send the seek events */
+        g_object_get (data.pipeline, "video-sink", &data.video_sink, NULL);
+    }
+   
+    /* Send the event */
+    gst_element_send_event (data.video_sink, seek_event);
+   
+    g_print ("Current rate: %g\n", data.rate);
+}
+
+/* Extract metadata from all the streams and write it to the text widget in the GUI */
+static void analyze_streams () 
+{
+    gint i;
+    GstTagList *tags;
+    gchar *str, *total_str;
+    guint rate;
+    gint n_video, n_audio, n_text;
+    GtkTextBuffer *text;
+   
+    /* Clean current contents of the widget */
+    text = gtk_text_view_get_buffer (GTK_TEXT_VIEW (data.streams_list));
+    gtk_text_buffer_set_text (text, "", -1);
+   
+    /* Read some properties */
+    g_object_get (data.pipeline, "n-video", &n_video, NULL);
+    g_object_get (data.pipeline, "n-audio", &n_audio, NULL);
+    g_object_get (data.pipeline, "n-text", &n_text, NULL);
+   
+    for (i = 0; i < n_video; i++) 
+    {
+        tags = NULL;
+        /* Retrieve the stream's video tags */
+        g_signal_emit_by_name (data.pipeline, "get-video-tags", i, &tags);
+        if (tags) 
+        {
+            total_str = g_strdup_printf ("video stream %d:\n", i);
+            gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+            g_free (total_str);
+            gst_tag_list_get_string (tags, GST_TAG_VIDEO_CODEC, &str);
+            total_str = g_strdup_printf ("  codec: %s\n", str ? str : "unknown");
+            gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+            g_free (total_str);
+            g_free (str);
+            gst_tag_list_free (tags);
+        }
+    }
+   
+    for (i = 0; i < n_audio; i++) 
+    {
+        tags = NULL;
+        /* Retrieve the stream's audio tags */
+        g_signal_emit_by_name (data.pipeline, "get-audio-tags", i, &tags);
+        if (tags) 
+        {
+            if (gst_tag_list_get_uint (tags, GST_TAG_TITLE, &str)) 
+            {
+                total_str = g_strdup_printf ("  Title: %d\n", str);
+                gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+                g_free (total_str);
+            }
+            total_str = g_strdup_printf ("\naudio stream %d:\n", i);
+            gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+            g_free (total_str);
+            if (gst_tag_list_get_string (tags, GST_TAG_AUDIO_CODEC, &str)) 
+            {
+                total_str = g_strdup_printf ("  codec: %s\n", str);
+                gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+                g_free (total_str);
+                g_free (str);
+            }
+            if (gst_tag_list_get_string (tags, GST_TAG_LANGUAGE_CODE, &str)) 
+            {
+                total_str = g_strdup_printf ("  language: %s\n", str);
+                gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+                g_free (total_str);
+                g_free (str);
+            }
+            if (gst_tag_list_get_uint (tags, GST_TAG_BITRATE, &rate)) 
+            {
+                total_str = g_strdup_printf ("  bitrate: %d\n", rate);
+                gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+                g_free (total_str);
+            }
+            gst_tag_list_free (tags);
+        }
+    }
+   
+    for (i = 0; i < n_text; i++) 
+    {
+        tags = NULL;
+        /* Retrieve the stream's subtitle tags */
+        g_signal_emit_by_name (data.pipeline, "get-text-tags", i, &tags);
+        if (tags) 
+        {
+            total_str = g_strdup_printf ("\nsubtitle stream %d:\n", i);
+            gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+            g_free (total_str);
+            if (gst_tag_list_get_string (tags, GST_TAG_LANGUAGE_CODE, &str)) 
+            {
+                total_str = g_strdup_printf ("  language: %s\n", str);
+                gtk_text_buffer_insert_at_cursor (text, total_str, -1);
+                g_free (total_str);
+                g_free (str);
+            }
+            gst_tag_list_free (tags);
+        }
+    }
+}
+   
+/* This function is called when an "application" message is posted on the bus.
+ * Here we retrieve the message posted by the tags_cb callback */
+static void application_cb (GstBus *bus, GstMessage *msg) 
+{
+    if (g_strcmp0 (gst_structure_get_name (msg->structure), "tags-changed") == 0) 
+    {
+        /* If the message is the "tags-changed" (only one we are currently issuing), update
+        * the stream info GUI */
+        g_print("tags-changed");
+        analyze_streams (data);
+    }
+}
+
+static gboolean refresh_ui () {
+  GstFormat fmt = GST_FORMAT_TIME;
+  gint64 current = -1;
+   
+  /* We do not want to update anything unless we are in the PAUSED or PLAYING states */
+  if (data.state < GST_STATE_PAUSED)
+    return TRUE;
+   
+  /* If we didn't know it yet, query the stream duration */
+  if (!GST_CLOCK_TIME_IS_VALID (data.duration)) {
+    g_print("duration was invalid\n");
+    
+    if (!gst_element_query_duration (data.pipeline, &fmt, &data.duration)) {
+      g_printerr ("Could not query current duration.\n");
+    } else {
+      /* Set the range of the slider to the clip duration, in SECONDS */
+      gtk_range_set_range (GTK_RANGE (data.slider), 0, (gdouble)data.duration / GST_SECOND);
+    }
+  }
+   
+  if (gst_element_query_position (data.pipeline, &fmt, &current)) {
+    /* Block the "value-changed" signal, so the slider_cb function is not called
+     * (which would trigger a seek the user has not requested) */
+    g_signal_handler_block (data.slider, data.slider_update_signal_id);
+    /* Set the position of the slider to the current pipeline positoin, in SECONDS */
+    gtk_range_set_value (GTK_RANGE (data.slider), (gdouble)current / GST_SECOND);
+    /* Re-enable the signal */
+    g_signal_handler_unblock (data.slider, data.slider_update_signal_id);
+  }
+  return TRUE;
 }

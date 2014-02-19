@@ -24,10 +24,10 @@
 
 static gintptr video_window_xid = 0;
 static gboolean change_request = FALSE;
-static GtkWidget* audio_alaw, *audio_mulaw, *video_mjpeg, *video_mpeg;
+static GtkWidget* audio_alaw, *audio_mulaw, *audio_mkv, *video_mjpeg, *video_mpeg;
 
-typedef enum {STREAM, RECORD_VIDEO, RECORD_AUDIO} mode;
-typedef enum {ALAW, MULAW} AudioEncoder;
+typedef enum {STREAM, RECORD_VIDEO, RECORD_AUDIO, PLAYER} mode;
+typedef enum {ALAW, MULAW, MKV} AudioEncoder;
 typedef enum {MJPEG, MPEG} VideoEncoder;
 
 typedef struct _CustomData
@@ -38,7 +38,10 @@ typedef struct _CustomData
 	GstCaps *enc_caps;
 	GstElement *colorspace;
 	GstElement *encoder;
+	GstElement *decoder;
 	GstElement *mux;
+	GstElement *audioconvert;
+	GstElement *audiosink;
 	GstElement *sink;
 	GstElement *sink2;
 	GstBin * custom_bin;
@@ -49,4 +52,16 @@ typedef struct _CustomData
 	mode Mode;
 	AudioEncoder audio_encoder;
 	VideoEncoder video_encoder;
+	GtkWidget *slider;              /* Slider widget to keep track of current position */
+    GtkWidget *streams_list;        /* Text widget to display info about the streams */
+    GtkWindow *dialog_window;
+    gulong slider_update_signal_id; /* Signal ID for the slider update signal */	
+    gint64 duration;                /* Duration of the clip, in nanoseconds */
+    gdouble rate;
+    GstElement *video_sink;
 } CustomData;
+
+  
+  GtkWidget *video_window;		  /* Main window of the UI */
+  GtkWindow *dialog_window;
+
