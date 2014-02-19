@@ -4,9 +4,15 @@
 #include <string.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkwin32.h>
+#include <glib.h>
 
 static gintptr video_window_xid = 0;
 static gboolean change_request = FALSE;
+static GtkWidget* audio_alaw, *audio_mulaw, *video_mjpeg, *video_mpeg;
+
+typedef enum {STREAM, RECORD_VIDEO, RECORD_AUDIO} mode;
+typedef enum {ALAW, MULAW} AudioEncoder;
+typedef enum {MJPEG, MPEG} VideoEncoder;
 
 typedef struct _CustomData
 {
@@ -24,6 +30,7 @@ typedef struct _CustomData
 	GstElement *player_queue;
 	GstElement *file_queue;
 	GstState state;
+	mode Mode;
+	AudioEncoder audio_encoder;
+	VideoEncoder video_encoder;
 } CustomData;
-
-//extern CustomData data;
