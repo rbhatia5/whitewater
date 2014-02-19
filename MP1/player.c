@@ -15,7 +15,7 @@
    
 /* Structure to contain all our information, so we can pass it around */
 typedef struct _CustomData {
-  GstElement *pipeline;           /* Our one and only pipeline */
+  GstElement *pipeline, *src, *decode, *appsink;           /* Our one and only pipeline */
   GstElement *video_sink;         /* Storage for the video sink */ 
   GtkWidget *slider;              /* Slider widget to keep track of current position */
   GtkWidget *streams_list;        /* Text widget to display info about the streams */
@@ -116,8 +116,9 @@ static void fileopen_cb (GtkButton *button, CustomData *data) {
    	strcat(final_path,filename);
    	g_print(final_path);
    	//change the playbin uri to play the selected file
-    g_object_set (data->pipeline, "uri", final_path, NULL);
-    g_free (filename);
+    //GstElement * src = gst_bin_get_by_name(data->pipeline, "fileSource");
+    g_object_set (data->src, "location", filename, NULL);
+    
   	}
   	
   	data->rate = GST_CLOCK_TIME_NONE;
