@@ -1,10 +1,26 @@
-#include <gst/gst.h>
+/*#include <gst/gst.h>
 #include <gtk/gtk.h>
 #include <gst/interfaces/xoverlay.h>
 #include <string.h>
 #include <gdk/gdk.h>
 #include <gdk/gdkwin32.h>
 #include <glib.h>
+*/
+
+#include <string.h>
+   
+#include <gtk/gtk.h>
+#include <gst/gst.h>
+#include <gst/interfaces/xoverlay.h>
+   
+#include <gdk/gdk.h>
+#if defined (GDK_WINDOWING_X11)
+#include <gdk/gdkx.h>
+#elif defined (GDK_WINDOWING_WIN32)
+#include <gdk/gdkwin32.h>
+#elif defined (GDK_WINDOWING_QUARTZ)
+#include <gdk/gdkquartz.h>
+#endif
 
 static gintptr video_window_xid = 0;
 static gboolean change_request = FALSE;

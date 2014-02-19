@@ -26,13 +26,13 @@ static void assemble_pipeline()
 	{
 		case STREAM:
 			g_print("CONNECTING STREAM.\n");
-			data.source = gst_element_factory_make("ksvideosrc", "webcam");
+			data.source = gst_element_factory_make("v4l2src", "webcam");
 			if(!data.source)
 			{
 				ret = FALSE;
 				g_print("SOURCE FAILED.\n");
 			}
-			data.sink2 = gst_element_factory_make("d3dvideosink", "playersink");
+			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
 
 			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
 			gst_element_link(data.source, data.sink2);
@@ -40,12 +40,13 @@ static void assemble_pipeline()
 
 		case RECORD_VIDEO:
 			g_print("RECORDING VIDEO.\n");
-			data.source = gst_element_factory_make("ksvideosrc", "webcam");
+			data.source = gst_element_factory_make("v4l2src", "webcam");
 			if(!data.source)
 			{
 				ret = FALSE;
 				g_print("SOURCE FAILED.\n");
 			}
+			/*
 
 			data.enc_caps = gst_caps_new_simple (
 				"video/x-raw-yuv", 
@@ -58,7 +59,7 @@ static void assemble_pipeline()
 				ret = FALSE;
 				g_print("Caps structure could not be initialized.\n");
 			}
-	
+	*/
 			data.colorspace = gst_element_factory_make("ffmpegcolorspace", "cs");
 			if(!data.colorspace)
 			{
@@ -66,7 +67,7 @@ static void assemble_pipeline()
 				g_print("COLORSPACE FAILED.\n");
 			}
 
-			switch(data.audio_encoder)
+			switch(data.video_encoder)
 			{
 				case MJPEG:
 					data.encoder = gst_element_factory_make("jpegenc", "encoder");
@@ -97,7 +98,7 @@ static void assemble_pipeline()
 			}
 			g_object_set(G_OBJECT(data.sink), "location", "1.mp4",NULL);
 
-			data.sink2 = gst_element_factory_make("d3dvideosink", "playersink");
+			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
 
 			data.tee = gst_element_factory_make("tee", "tee");
 			data.player_queue = gst_element_factory_make("queue", "player-queue");
@@ -110,11 +111,11 @@ static void assemble_pipeline()
 			gst_element_link_many(data.colorspace, data.encoder, data.mux, data.sink, NULL);
 			gst_element_link_many(data.player_queue, data.sink2, NULL);
 	
-			tee_src_pad_template = gst_element_class_get_pad_template (GST_ELEMENT_GET_CLASS (data.tee), "src%d");
-			tee_player_pad = gst_element_request_pad (data.tee, tee_src_pad_template, NULL, NULL);
+			//tee_src_pad_template = gst_element_class_get_pad_template (GST_ELEMENT_GET_CLASS (data.tee), "src%d");
+			tee_player_pad = gst_element_get_request_pad (data.tee,"src%d");
 			g_print ("Obtained request pad %s for player branch.\n", gst_pad_get_name (tee_player_pad));
 			queue_player_pad = gst_element_get_static_pad (data.player_queue, "sink");
-			tee_file_pad = gst_element_request_pad (data.tee, tee_src_pad_template, NULL, NULL);
+			tee_file_pad = gst_element_get_request_pad (data.tee, "src%d");
 			g_print ("Obtained request pad %s for file branch.\n", gst_pad_get_name (tee_file_pad));
 			queue_file_pad = gst_element_get_static_pad (data.file_queue, "sink");
 			if (gst_pad_link (tee_player_pad, queue_player_pad) != GST_PAD_LINK_OK ||
@@ -133,6 +134,7 @@ static void assemble_pipeline()
 				ret = FALSE;
 				g_print("SOURCE FAILED.\n");
 			}
+			/*
 			data.enc_caps = gst_caps_new_simple (
 				"audio/x-raw-int", 
 				"rate", G_TYPE_INT, 44100, 
@@ -143,7 +145,7 @@ static void assemble_pipeline()
 				ret = FALSE;
 				g_print("Caps structure could not be initialized.\n");
 			}
-
+*/
 			switch(data.audio_encoder)
 			{
 				case MULAW:

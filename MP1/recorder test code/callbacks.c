@@ -14,7 +14,7 @@ static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message)
 		GstXOverlay *xoverlay;
 
 		xoverlay = GST_X_OVERLAY (data.sink2);
-		gst_x_overlay_set_window_handle (xoverlay, video_window_xid);
+		gst_x_overlay_set_xwindow_id (xoverlay, video_window_xid);
 	} else {
 		g_warning ("Should have obtained video_window_xid by now!");
 	}
@@ -147,7 +147,8 @@ static void realize_cb(GtkWidget *widget)
 		g_printerr("Not a native window!\n");
 
 	//get handle and attach to pipeline
-	video_window_xid = (gintptr)GDK_WINDOW_HWND (window);
+	//video_window_xid = (gintptr)GDK_WINDOW_HWND (window); I DID STUFF
+	video_window_xid = GDK_WINDOW_XID (window);
 }
 
 static void audio_encoding_cb(GtkWidget* widget, GdkEvent * eventt)

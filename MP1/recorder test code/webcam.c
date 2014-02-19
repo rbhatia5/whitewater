@@ -12,6 +12,21 @@ int main(int argc, char * argv[])
 	
 	data.Mode = STREAM;
 	data.audio_encoder = ALAW;
+	data.video_encoder = MJPEG;
+
+
+	data.enc_caps = gst_caps_new_simple (
+				"audio/x-raw-int", 
+				"rate", G_TYPE_INT, 44100, 
+				"channels", G_TYPE_INT, 1,
+				NULL);
+			if(!data.enc_caps)
+			{
+				ret = FALSE;
+				g_print("Caps structure could not be initialized.\n");
+			}
+
+	
 	create_ui();
 
 	assemble_pipeline();
