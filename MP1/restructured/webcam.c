@@ -15,7 +15,7 @@ int main(int argc, char * argv[])
 	data.audio_encoder = ALAW;
 	data.video_encoder = MJPEG;
 	create_ui();
-	start_streamer();
+	//start_streamer();
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);	
 

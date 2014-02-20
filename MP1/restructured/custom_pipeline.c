@@ -68,6 +68,7 @@ static gboolean start_streamer() {
 			data.source = gst_element_factory_make("v4l2src", "webcam");
 			if(!data.source) {
 				g_print("SOURCE FAILED.\n");
+				return FALSE;
 			}
 			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
 			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
@@ -82,7 +83,11 @@ static gboolean start_player(char* filename) {
             data.sink2 = gst_element_factory_make("xvimagesink", "applicationsink");
             g_signal_connect(data.decoder, "new-decoded-pad", G_CALLBACK (pad_added_handler), NULL);
             gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.decoder, data.sink2, NULL);
-            gst_element_link_many(data.source, data.decoder, data.sink2, NULL);
+            if(gst_element_link_many(data.source, data.decoder, data.sink2, NULL)) {
+		     }
+			else {
+				g_print("Invalid File \n");
+			}
 }
 
 static gboolean start_video_recorder() {
@@ -233,9 +238,12 @@ static gboolean start_audio_recorder() {
 
 static gboolean disassemble_pipeline()
 {
+	if(data.pipeline!=NULL) {
 	gst_element_set_state(data.pipeline, GST_STATE_READY);
 	gst_element_set_state(data.pipeline, GST_STATE_NULL);
 	g_object_unref(data.pipeline);
+	data.pipeline = NULL;
+	}
 	//
 	////unlink the elements
 	//gst_element_set_state(data.sink, GST_STATE_NULL);

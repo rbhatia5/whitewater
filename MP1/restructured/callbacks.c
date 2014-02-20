@@ -39,15 +39,17 @@ static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message)
 
 //activate the player
 static void player_cb() {
-gtk_widget_set_sensitive(player_controls.play_button, TRUE);
-gtk_widget_set_sensitive(player_controls.pause_button, TRUE);
-gtk_widget_set_sensitive(player_controls.stop_button, TRUE);
+gtk_widget_set_sensitive(player_controls.play_button, FALSE);
+gtk_widget_set_sensitive(player_controls.pause_button, FALSE);
+gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
 gtk_widget_set_sensitive(player_controls.fileopen_button, TRUE);
-gtk_widget_set_sensitive(player_controls.fastforward_button, TRUE);
-gtk_widget_set_sensitive(player_controls.fastrewind_button, TRUE);
+gtk_widget_set_sensitive(player_controls.fastforward_button, FALSE);
+gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
 
 gtk_widget_set_sensitive(player_controls.record_video_button, FALSE);
 gtk_widget_set_sensitive(player_controls.record_audio_button, FALSE);
+gtk_widget_set_sensitive(player_controls.audio_vbox, FALSE);
+gtk_widget_set_sensitive(player_controls.video_vbox, FALSE);
 //disable player button and enable recorder button
 gtk_widget_set_sensitive(player_controls.recorder_button, TRUE);
 gtk_widget_set_sensitive(player_controls.player_button, FALSE);
@@ -63,10 +65,13 @@ gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
 
 gtk_widget_set_sensitive(player_controls.record_video_button, TRUE);
 gtk_widget_set_sensitive(player_controls.record_audio_button, TRUE);
-
+gtk_widget_set_sensitive(player_controls.audio_vbox, TRUE);
+gtk_widget_set_sensitive(player_controls.video_vbox, TRUE);
 //disable recorder button and enable player
 gtk_widget_set_sensitive(player_controls.recorder_button, FALSE);
 gtk_widget_set_sensitive(player_controls.player_button, TRUE);
+disassemble_pipeline();
+start_streamer();
 }
 
 static void delete_event_cb(GtkWidget * widget, GdkEvent * eventt)
@@ -241,6 +246,14 @@ static void fileopen_cb (GtkButton *button)
 	gtk_widget_destroy (dialog);
     disassemble_pipeline();
 	start_player(filename);
+
+     gtk_widget_set_sensitive(player_controls.play_button, TRUE);
+     gtk_widget_set_sensitive(player_controls.pause_button, TRUE);
+    gtk_widget_set_sensitive(player_controls.stop_button, TRUE);
+    gtk_widget_set_sensitive(player_controls.fileopen_button, TRUE);
+    gtk_widget_set_sensitive(player_controls.fastforward_button, TRUE);
+    gtk_widget_set_sensitive(player_controls.fastrewind_button, TRUE);
+
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
