@@ -60,6 +60,21 @@ typedef struct _CustomData {
     GstElement *video_sink;
 } CustomData;
 
+typedef struct _Monitor{
+
+	GstElement *tee1, *q1a, *q1b;
+	GstPad *tpad1a, *tpad1b;
+
+	GstElement *tee2, *q2a, *q2b;
+	GstPad *tpad2a, *tpad2b;
+
+	GstPad *q1aPado,*q1bPado,*q2aPado,*q2bPado;
+	GstPad *q1aPadi,*q1bPadi,*q2aPadi,*q2bPadi;
+	GstElement *appsinki, *appsinkf;
+
+}Monitor;
+
+
 typedef struct _PlayerControls {
 GtkWidget *audio_vbox;
 GtkWidget *video_vbox;

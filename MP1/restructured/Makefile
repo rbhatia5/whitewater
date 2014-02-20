@@ -29,9 +29,9 @@ CFLAGS  := $(PKG_CFLAGS) $(ADD_CFLAGS) $(CFLAGS)
 LDFLAGS := $(PKG_LDFLAGS) $(LDFLAGS)
 
 .PHONY : all
-all: clean webcam
+all: clean vplayer
 
-webcam: callbacks.o custom_pipeline.o GTK_UI.o webcam.o
+vplayer: callbacks.o custom_pipeline.o GTK_UI.o webcam.o
 	$(CC) $^ -o $@ -ggdb $(LDFLAGS)
 
 callbacks.o: callbacks.c

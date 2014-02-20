@@ -1,6 +1,7 @@
 #include "CustomData.h"
 #include <string.h>
 static CustomData data;
+static Monitor monitor;
 static PlayerControls player_controls;
 /* This function will be called by the pad-added signal */
 static void pad_added_handler (GstElement *src, GstPad *new_pad,gboolean b) 
@@ -54,6 +55,23 @@ exit:
 }
 
 
+static void new_buffer_stream (GstElement *sink, int i) {
+  GstBuffer *buffer;
+   
+  /* Retrieve the buffer */
+  g_signal_emit_by_name (sink, "pull-buffer", &buffer);
+  
+
+  if (buffer) {
+    /* The only thing we do in this example is print a * to indicate a received buffer */
+    guint size = GST_BUFFER_SIZE(buffer); 
+    //g_print ("*");
+    g_print ("\n%d\n", size);
+    gst_buffer_unref (buffer);
+  }
+}
+
+
 /*
 Author		: Zain, Kristian, Ramit
 Function	: construct_pipeline
@@ -75,13 +93,67 @@ static gboolean start_streamer() {
 			if(webcam_name!=NULL) {
 			g_print("%s \n",webcam_name);
 			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
-			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
+
+			
+			monitor.tee1 = gst_element_factory_make ("tee", "tee1");
+			
+			monitor.q1a = gst_element_factory_make ("queue","q1a"); //appsinki
+			monitor.q1b = gst_element_factory_make ("queue","q1b"); //tee2
+
+			
+			monitor.appsinki = gst_element_factory_make("appsink", "appsinki");
+			g_object_set (monitor.appsinki, "emit-signals", TRUE, NULL);
+			g_signal_connect (monitor.appsinki, "new-buffer", G_CALLBACK (new_buffer_stream),0);			
+/*
+
+			g_object_set (monitor.appsinkf, "emit-signals", TRUE, NULL);
+			g_signal_connect (monitor.appsinkf, "new-buffer", G_CALLBACK (new_bufferf),0);
+*/
+
+
+			//gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
+			
+			gst_bin_add_many(GST_BIN(data.pipeline), data.source , data.sink2, monitor.tee1, monitor.q1a, monitor.q1b, monitor.appsinki, NULL);
+
+				if (gst_element_link_many (data.source, monitor.tee1, NULL) != TRUE ||
+				  gst_element_link_many (monitor.q1a, monitor.appsinki, NULL) != TRUE ||
+				  gst_element_link_many (monitor.q1b, data.sink2, NULL) != TRUE
+				  ){
+						g_printerr ("Elements could not be linked.\n");
+						//gst_object_unref (pipeline);
+						//return -1;
+			      }
+
+			      g_print("Linking Pads together\n");
+
+     			monitor.q1aPado = gst_element_get_request_pad (monitor.tee1,"src%d");
+     			g_print ("Obtained request pad %s for q1aPado.\n", gst_pad_get_name (monitor.q1aPado));
+     			monitor.q1aPadi = gst_element_get_static_pad (monitor.q1a, "sink");
+
+     			     if (gst_pad_link (monitor.q1aPado,monitor.q1aPadi) != GST_PAD_LINK_OK) {
+     				g_printerr ("Tee1 could not be linked to q1a.\n");
+     				//gst_object_unref (pipeline);
+     				//return -1;
+     			      }
+
+     			monitor.q1bPado = gst_element_get_request_pad (monitor.tee1,"src%d");
+     			g_print ("Obtained request pad %s for q1aPado.\n", gst_pad_get_name (monitor.q1bPado));
+     			monitor.q1bPadi = gst_element_get_static_pad (monitor.q1b, "sink");
+
+     			    if (gst_pad_link (monitor.q1bPado, monitor.q1bPadi) != GST_PAD_LINK_OK) {
+     				g_printerr ("Tee1 could not be linked to q1b.\n");
+     				//gst_object_unref (pipeline);
+     				//return -1;
+     			      }
+
+			      gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+/*
 			if(!gst_element_link(data.source, data.sink2))
 				g_print("Not Streaming");
 			else
 				g_print("Pipeline created");
 			gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
-			}
+			*/}
 }
 
 static gboolean start_player(char* filename) {
