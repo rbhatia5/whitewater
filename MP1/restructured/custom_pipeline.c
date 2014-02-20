@@ -3,10 +3,24 @@
 static CustomData data;
 static Monitor monitor;
 static PlayerControls player_controls;
+static GstBuffer *bufferi;
+static GstBuffer *bufferf;
+static gsize lasti = 0;
+static gsize lastf = 1;
+static GstClockTime t1 = 0;
+static GstClockTime t2 = 0;
+
+static int handshake =0;
 /* This function will be called by the pad-added signal */
+static void calculate_ratio(void){
+
+	float ratio = (float) lastf/ (float)lasti;
+	g_print("compression time: %u\ndecompression time: %u\nframe_size: %d\ncompression ratio: %f\n",t1, t2,lastf,ratio);
+}
+
 static void pad_added_handler (GstElement *src, GstPad *new_pad,gboolean b) 
 {
-  GstPad *sink_pad = gst_element_get_static_pad (data.sink2, "sink");
+  GstPad *sink_pad = gst_element_get_static_pad (monitor.tee2, "sink");
   GstPadLinkReturn ret;
   GstCaps *new_pad_caps = NULL;
   GstStructure *new_pad_struct = NULL;
@@ -38,6 +52,7 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad,gboolean b)
   }
 
   /* Attempt the link */
+
   ret = gst_pad_link (new_pad, sink_pad);
   if (GST_PAD_LINK_FAILED (ret)) {
     g_print ("  Type is '%s' but link failed.\n", new_pad_type);
@@ -69,6 +84,48 @@ static void new_buffer_stream (GstElement *sink, int i) {
     g_print ("\n%d\n", size);
     gst_buffer_unref (buffer);
   }
+}
+
+
+static void new_buffer_playeri (GstElement *sink, int i) {
+  
+  /* Retrieve the buffer */
+  g_signal_emit_by_name (sink, "pull-buffer", &bufferi);
+  
+  if(handshake ==0){
+  if (bufferi) {
+    /* The only thing we do in this example is print a * to indicate a received buffer */
+    guint size = GST_BUFFER_SIZE(bufferi); 
+    //g_print ("initial: %d\n", size);
+    handshake = 1;
+    lasti = size;
+    t1 = GST_BUFFER_TIMESTAMP(bufferi);
+    //gst_buffer_unref (buffer);
+  }
+}
+
+  
+}
+
+static void new_buffer_playerf (GstElement *sink, int i) {
+  
+  g_signal_emit_by_name (sink, "pull-buffer", &bufferf);
+
+  if(handshake == 1){
+  	if (bufferf) {
+    /* The only thing we do in this example is print a * to indicate a received buffer */
+    	guint size = GST_BUFFER_SIZE(bufferf); 
+    	//g_print ("final: %d\n", size);
+    	lastf = size;
+
+    //gst_buffer_unref (buffer);
+  		}
+  		t2 = GST_BUFFER_TIMESTAMP(bufferf);
+  		calculate_ratio();
+  		handshake = 0;
+	}
+
+  
 }
 
 
@@ -163,12 +220,125 @@ static gboolean start_player(char* filename) {
             data.decoder = gst_element_factory_make("decodebin2", "decodebin2"); 
             data.sink2 = gst_element_factory_make("xvimagesink", "applicationsink");
             g_signal_connect(data.decoder, "new-decoded-pad", G_CALLBACK (pad_added_handler), NULL);
-            gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.decoder, data.sink2, NULL);
+        //   gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.decoder, data.sink2, NULL);
+           
+
+
+            			monitor.tee1 = gst_element_factory_make ("tee", "tee1");
+            			
+            			monitor.q1a = gst_element_factory_make ("queue","q1a"); //appsinki
+            			monitor.q1b = gst_element_factory_make ("queue","q1b"); //tee2
+
+            			monitor.tee2 = gst_element_factory_make ("tee", "tee2");
+            			
+            			monitor.q2a = gst_element_factory_make ("queue","q2a"); //appsinki
+            			monitor.q2b = gst_element_factory_make ("queue","q2b"); //tee2
+
+            			
+            			monitor.appsinki = gst_element_factory_make("appsink", "appsinki");
+            			
+            			g_object_set (monitor.appsinki, "emit-signals", TRUE, NULL);
+            			g_signal_connect (monitor.appsinki, "new-buffer", G_CALLBACK (new_buffer_playeri),0);			
+           				
+
+           				monitor.appsinkf = gst_element_factory_make("appsink", "appsinkf");
+            			
+            			g_object_set (monitor.appsinkf, "emit-signals", TRUE, NULL);
+            			g_signal_connect (monitor.appsinkf, "new-buffer", G_CALLBACK (new_buffer_playerf),0);
+           				
+
+            			//gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
+         			
+            			gst_bin_add_many(GST_BIN(data.pipeline), data.source ,data.decoder, data.sink2, monitor.tee1, monitor.q1a, monitor.q1b, monitor.appsinki,monitor.tee2, monitor.q2a,monitor.q2b, monitor.appsinkf, NULL);
+
+
+            				if(!gst_element_link_many (data.source, monitor.tee1, NULL)){
+            					g_print("1 was bad");
+            				}
+
+            				if(!gst_element_link_many (monitor.q1a, monitor.appsinki, NULL)){
+            					g_print("2 was bad");
+            				}
+
+
+            				if(!gst_element_link_many (monitor.q1b,data.decoder, NULL)){
+            					g_print("3 was bad");
+            				}
+
+            				if(!gst_element_link_many (data.decoder, monitor.tee2, NULL)){
+            					g_print("3 was bad");
+            				}
+
+            				if(!gst_element_link_many (monitor.q2a,monitor.appsinkf, NULL)){
+            					g_print("4 was bad");
+            				}
+
+            				if(!gst_element_link_many (monitor.q2b,data.sink2, NULL)){
+            					g_print("5 was bad");
+            				}
+
+/*
+            				if (gst_element_link_many (data.source, monitor.tee1, NULL) != TRUE ||
+            				  gst_element_link_many (monitor.q1a, monitor.appsinki, NULL) != TRUE ||
+            				  gst_element_link_many (monitor.q1b,data.decoder, monitor.tee2, NULL) != TRUE||
+            				  gst_element_link_many (monitor.q2a,monitor.appsinkf, NULL)!= TRUE||
+            				   gst_element_link_many (monitor.q2b,data.sink2, NULL)!= TRUE
+
+            				  ){
+            						g_printerr ("Elements could not be linked.\n");
+            						//gst_object_unref (pipeline);
+            						//return -1;
+            			      }
+
+*/          			      g_print("Linking Pads together\n");
+
+                 			monitor.q1aPado = gst_element_get_request_pad (monitor.tee1,"src%d");
+                 			g_print ("Obtained request pad %s for q1aPado.\n", gst_pad_get_name (monitor.q1aPado));
+                 			monitor.q1aPadi = gst_element_get_static_pad (monitor.q1a, "sink");
+
+                 			     if (gst_pad_link (monitor.q1aPado,monitor.q1aPadi) != GST_PAD_LINK_OK) {
+                 				g_printerr ("Tee1 could not be linked to q1a.\n");
+                 				//gst_object_unref (pipeline);
+                 				//return -1;
+                 			      }
+
+                 			monitor.q1bPado = gst_element_get_request_pad (monitor.tee1,"src%d");
+                 			g_print ("Obtained request pad %s for q1aPado.\n", gst_pad_get_name (monitor.q1bPado));
+                 			monitor.q1bPadi = gst_element_get_static_pad (monitor.q1b, "sink");
+
+                 			    if (gst_pad_link (monitor.q1bPado, monitor.q1bPadi) != GST_PAD_LINK_OK) {
+                 				g_printerr ("Tee1 could not be linked to q1b.\n");
+                 				//gst_object_unref (pipeline);
+                 				//return -1;
+                 			      }
+
+                 			monitor.q2aPado = gst_element_get_request_pad (monitor.tee2,"src%d");
+                 			g_print ("Obtained request pad %s for q2aPado.\n", gst_pad_get_name (monitor.q1aPado));
+                 			monitor.q2aPadi = gst_element_get_static_pad (monitor.q2a, "sink");
+
+                 			     if (gst_pad_link (monitor.q2aPado,monitor.q2aPadi) != GST_PAD_LINK_OK) {
+                 				g_printerr ("Tee2 could not be linked to q2a.\n");
+                 				//gst_object_unref (pipeline);
+                 				//return -1;
+                 			      }
+
+                 			monitor.q2bPado = gst_element_get_request_pad (monitor.tee2,"src%d");
+                 			g_print ("Obtained request pad %s for q2aPado.\n", gst_pad_get_name (monitor.q1bPado));
+                 			monitor.q2bPadi = gst_element_get_static_pad (monitor.q2b, "sink");
+
+                 			    if (gst_pad_link (monitor.q2bPado, monitor.q2bPadi) != GST_PAD_LINK_OK) {
+                 				g_printerr ("Tee2 could not be linked to q2b.\n");
+                 				//gst_object_unref (pipeline);
+                 				//return -1;
+                 			      }
+
+
+/*
             if(gst_element_link_many(data.source, data.decoder, data.sink2, NULL)) {
 		     }
 			else {
 				g_print("Invalid File \n");
-			}
+			}*/
 			gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
 
