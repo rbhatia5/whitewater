@@ -1,5 +1,5 @@
 #include "CustomData.h"
-
+#include <string.h>
 static CustomData data;
 static PlayerControls player_controls;
 /* This function will be called by the pad-added signal */
@@ -63,6 +63,7 @@ Returns		: T/F
 */
 
 static gboolean start_streamer() {
+			gchar *webcam_name;
 			g_print("CONNECTING STREAM.\n");
 			data.pipeline = gst_pipeline_new("stream-pipeline");
 			data.source = gst_element_factory_make("v4l2src", "webcam");
@@ -70,9 +71,17 @@ static gboolean start_streamer() {
 				g_print("SOURCE FAILED.\n");
 				return FALSE;
 			}
+			g_object_get(G_OBJECT(data.source),"device-name", &webcam_name, NULL);
+			if(webcam_name!=NULL) {
+			g_print("%s \n",webcam_name);
 			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
 			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
-			gst_element_link(data.source, data.sink2);
+			if(!gst_element_link(data.source, data.sink2))
+				g_print("Not Streaming");
+			else
+				g_print("Pipeline created");
+			gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+			}
 }
 
 static gboolean start_player(char* filename) {
@@ -88,9 +97,11 @@ static gboolean start_player(char* filename) {
 			else {
 				g_print("Invalid File \n");
 			}
+			gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
 
 static gboolean start_video_recorder() {
+			gchar *webcam_name;
 			GstPad *tee_player_pad, *tee_file_pad;
 			GstPad *queue_player_pad, *queue_file_pad;
 			g_print("RECORDING VIDEO.\n");
@@ -100,6 +111,8 @@ static gboolean start_video_recorder() {
 				g_print("SOURCE FAILED.\n");
 				return FALSE;
 			}
+			g_object_get(G_OBJECT(data.source),"device-name", &webcam_name, NULL);
+			if(webcam_name!=NULL){
 			data.enc_caps = gst_caps_new_simple (
 				"video/x-raw-yuv", 
 				"width", G_TYPE_INT, 320, 
@@ -182,9 +195,13 @@ static gboolean start_video_recorder() {
 			}
 			gst_object_unref (queue_file_pad);
 			gst_object_unref (queue_player_pad);
-}
+			
+			gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+			}
+	}
 
 static gboolean start_audio_recorder() {
+			gchar *device_name;
 			g_print("RECORDING AUDIO.\n");
 			data.pipeline = gst_pipeline_new("audio-pipeline");
 			data.source = gst_element_factory_make("alsasrc", "source");
@@ -193,6 +210,8 @@ static gboolean start_audio_recorder() {
 				g_print("SOURCE FAILED.\n");
 				return FALSE;
 			}
+			g_object_get(G_OBJECT(data.source),"device-name", &device_name, NULL);
+			if(device_name!=NULL){
 			g_object_set(data.source, "device", "hw:2", NULL);
 			data.enc_caps = gst_caps_new_simple (
 				"audio/x-raw-int", 
@@ -232,8 +251,11 @@ static gboolean start_audio_recorder() {
 				    data.audioconvert = gst_element_factory_make("audioconvert", "audioconvert");
 				    g_object_set(G_OBJECT(data.sink), "location", "audio_rec.mkv",NULL);
 			        gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.audioconvert, data.encoder, data.mux, data.sink, NULL);
-			        gst_element_link_many(data.source, data.audioconvert, data.encoder, data.mux, data.sink, NULL);				    
-}
+			        gst_element_link_many(data.source, data.audioconvert, data.encoder, data.mux, data.sink, NULL);
+			        				    
+			}
+			gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+		}
 }
 
 static gboolean disassemble_pipeline()

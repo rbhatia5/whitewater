@@ -1,5 +1,4 @@
 #include "custom_pipeline.c"
-
 static void attach_bus_cb();
 static void send_seek_event (); 
 static gboolean refresh_ui ();
@@ -38,6 +37,37 @@ static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message)
 	return GST_BUS_DROP;
 }
 
+//activate the player
+static void player_cb() {
+gtk_widget_set_sensitive(player_controls.play_button, TRUE);
+gtk_widget_set_sensitive(player_controls.pause_button, TRUE);
+gtk_widget_set_sensitive(player_controls.stop_button, TRUE);
+gtk_widget_set_sensitive(player_controls.fileopen_button, TRUE);
+gtk_widget_set_sensitive(player_controls.fastforward_button, TRUE);
+gtk_widget_set_sensitive(player_controls.fastrewind_button, TRUE);
+
+gtk_widget_set_sensitive(player_controls.record_video_button, FALSE);
+gtk_widget_set_sensitive(player_controls.record_audio_button, FALSE);
+//disable player button and enable recorder button
+gtk_widget_set_sensitive(player_controls.recorder_button, TRUE);
+gtk_widget_set_sensitive(player_controls.player_button, FALSE);
+}
+
+static void recorder_cb() {
+gtk_widget_set_sensitive(player_controls.play_button, FALSE);
+gtk_widget_set_sensitive(player_controls.pause_button, FALSE);
+gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
+gtk_widget_set_sensitive(player_controls.fileopen_button, FALSE);
+gtk_widget_set_sensitive(player_controls.fastforward_button, FALSE);
+gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
+
+gtk_widget_set_sensitive(player_controls.record_video_button, TRUE);
+gtk_widget_set_sensitive(player_controls.record_audio_button, TRUE);
+
+//disable recorder button and enable player
+gtk_widget_set_sensitive(player_controls.recorder_button, FALSE);
+gtk_widget_set_sensitive(player_controls.player_button, TRUE);
+}
 
 static void delete_event_cb(GtkWidget * widget, GdkEvent * eventt)
 {
@@ -56,11 +86,14 @@ static void pause_cb(GtkWidget* widget, GdkEvent * eventt)
 	gst_element_set_state(data.pipeline, GST_STATE_PAUSED);
 }
 
-static void stop_cb(GtkWidget* widget, GdkEvent * eventt)
-{
+//stop player from playing
+static void stop_cb(GtkWidget* widget, GdkEvent * eventt) {
+	gst_element_set_state(data.pipeline, GST_STATE_READY);
+}
+
+//stop recording and save file
+static void stop_recording_cb() {
 	disassemble_pipeline();
-	data.Mode = STREAM;
-	assemble_pipeline();
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
@@ -87,10 +120,7 @@ static void eos_cb(GstBus * bus, GstMessage * msg)
 	    data.Mode = STREAM;
 	}
 	disassemble_pipeline();
-	data.Mode = STREAM;
-	assemble_pipeline();
 	attach_bus_cb();
-	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
 
 //change of state handler
@@ -129,7 +159,7 @@ static void record_audio_cb(GtkWidget* widget, GdkEvent * eventt)
 {
 	disassemble_pipeline();
 	data.Mode = RECORD_AUDIO;
-	assemble_pipeline();
+	start_audio_recorder();
 	//attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
@@ -137,8 +167,7 @@ static void record_audio_cb(GtkWidget* widget, GdkEvent * eventt)
 static void record_video_cb(GtkWidget* widget, GdkEvent * eventt)
 {
 	disassemble_pipeline();
-	data.Mode = RECORD_VIDEO;
-	assemble_pipeline();
+	start_video_recorder();
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
@@ -190,19 +219,14 @@ static void video_encoding_cb(GtkWidget* widget, GdkEvent * eventt)
 	}
 }
 
-
-//////////////////////////////////////////////////////player////////////////////////////////
-
 /* This function is called when the FILE OPEN button is clicked */
 static void fileopen_cb (GtkButton *button) 
 {
     char *filename;
-    char *final_path;
-    int final_path_length ;
   	GtkWidget *dialog;
 	
 	dialog = gtk_file_chooser_dialog_new ("Open File",
-				      data.dialog_window,
+				      data.main_window,
 				      GTK_FILE_CHOOSER_ACTION_OPEN,
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 				      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
@@ -212,20 +236,11 @@ static void fileopen_cb (GtkButton *button)
   	{
         filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
         g_print("File path %s \n",filename);
-   	    final_path_length = strlen("file://")+strlen(filename)+1;
-   	    final_path = malloc(final_path_length);
-   	    memset(final_path,0,final_path_length);
-   	    strcpy(final_path,"file://");
-   	    strcat(final_path,filename);
-       	g_print(final_path);
     }
   	data.rate = GST_CLOCK_TIME_NONE;
 	gtk_widget_destroy (dialog);
-    
     disassemble_pipeline();
-	data.Mode = PLAYER;
-	assemble_pipeline();
-	g_object_set (data.source, "location", filename, NULL);
+	start_player(filename);
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }

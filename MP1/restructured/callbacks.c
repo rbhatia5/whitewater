@@ -39,39 +39,43 @@ static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message)
 
 //activate the player
 static void player_cb() {
-gtk_widget_set_sensitive(player_controls.play_button, FALSE);
-gtk_widget_set_sensitive(player_controls.pause_button, FALSE);
-gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
-gtk_widget_set_sensitive(player_controls.fileopen_button, TRUE);
-gtk_widget_set_sensitive(player_controls.fastforward_button, FALSE);
-gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
+		data.Mode = PLAYER;
+		gtk_widget_set_sensitive(player_controls.play_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.pause_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.fileopen_button, TRUE);
+		gtk_widget_set_sensitive(player_controls.fastforward_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
 
-gtk_widget_set_sensitive(player_controls.record_video_button, FALSE);
-gtk_widget_set_sensitive(player_controls.record_audio_button, FALSE);
-gtk_widget_set_sensitive(player_controls.audio_vbox, FALSE);
-gtk_widget_set_sensitive(player_controls.video_vbox, FALSE);
-//disable player button and enable recorder button
-gtk_widget_set_sensitive(player_controls.recorder_button, TRUE);
-gtk_widget_set_sensitive(player_controls.player_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.record_video_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.record_audio_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.audio_vbox, FALSE);
+		gtk_widget_set_sensitive(player_controls.video_vbox, FALSE);
+		//disable player button and enable recorder button
+		gtk_widget_set_sensitive(player_controls.recorder_button, TRUE);
+		gtk_widget_set_sensitive(player_controls.player_button, FALSE);
+		disassemble_pipeline();
 }
 
 static void recorder_cb() {
-gtk_widget_set_sensitive(player_controls.play_button, FALSE);
-gtk_widget_set_sensitive(player_controls.pause_button, FALSE);
-gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
-gtk_widget_set_sensitive(player_controls.fileopen_button, FALSE);
-gtk_widget_set_sensitive(player_controls.fastforward_button, FALSE);
-gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
+		data.Mode = RECORDER;
+		gtk_widget_set_sensitive(player_controls.play_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.pause_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.fileopen_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.fastforward_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
 
-gtk_widget_set_sensitive(player_controls.record_video_button, TRUE);
-gtk_widget_set_sensitive(player_controls.record_audio_button, TRUE);
-gtk_widget_set_sensitive(player_controls.audio_vbox, TRUE);
-gtk_widget_set_sensitive(player_controls.video_vbox, TRUE);
-//disable recorder button and enable player
-gtk_widget_set_sensitive(player_controls.recorder_button, FALSE);
-gtk_widget_set_sensitive(player_controls.player_button, TRUE);
-disassemble_pipeline();
-start_streamer();
+		gtk_widget_set_sensitive(player_controls.record_video_button, TRUE);
+		gtk_widget_set_sensitive(player_controls.record_audio_button, TRUE);
+		gtk_widget_set_sensitive(player_controls.audio_vbox, TRUE);
+		gtk_widget_set_sensitive(player_controls.video_vbox, TRUE);
+		//disable recorder button and enable player
+		gtk_widget_set_sensitive(player_controls.recorder_button, FALSE);
+		gtk_widget_set_sensitive(player_controls.player_button, TRUE);
+		disassemble_pipeline();
+		start_streamer();
+		attach_bus_cb();
 }
 
 static void delete_event_cb(GtkWidget * widget, GdkEvent * eventt)
@@ -93,14 +97,26 @@ static void pause_cb(GtkWidget* widget, GdkEvent * eventt)
 
 //stop player from playing
 static void stop_cb(GtkWidget* widget, GdkEvent * eventt) {
-	gst_element_set_state(data.pipeline, GST_STATE_READY);
+
+	switch(data.Mode) {
+	case PLAYER:
+		gst_element_set_state(data.pipeline, GST_STATE_READY);
+		break;
+	case RECORDER:
+		disassemble_pipeline();
+		start_streamer();
+		attach_bus_cb();
+		gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
+		break;
+	default:
+		break;
+	}
 }
 
 //stop recording and save file
 static void stop_recording_cb() {
 	disassemble_pipeline();
 	attach_bus_cb();
-	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
 }
 
 static void error_cb(GstBus * bus, GstMessage * msg)
@@ -120,10 +136,6 @@ static void eos_cb(GstBus * bus, GstMessage * msg)
 {
 	g_print("Reached End of Stream\n");
 	gst_element_set_state(data.pipeline, GST_STATE_READY);
-	if(data.Mode == PLAYER)
-	{
-	    data.Mode = STREAM;
-	}
 	disassemble_pipeline();
 	attach_bus_cb();
 }
@@ -163,10 +175,9 @@ static void attach_bus_cb()
 static void record_audio_cb(GtkWidget* widget, GdkEvent * eventt)
 {
 	disassemble_pipeline();
-	data.Mode = RECORD_AUDIO;
 	start_audio_recorder();
-	//attach_bus_cb();
-	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+	attach_bus_cb();
+	gtk_widget_set_sensitive(player_controls.stop_button, TRUE);
 }
 
 static void record_video_cb(GtkWidget* widget, GdkEvent * eventt)
@@ -174,7 +185,7 @@ static void record_video_cb(GtkWidget* widget, GdkEvent * eventt)
 	disassemble_pipeline();
 	start_video_recorder();
 	attach_bus_cb();
-	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+	gtk_widget_set_sensitive(player_controls.stop_button, TRUE);
 }
 
 //when the window gets created the first time, we need to give the xoverlay interface of the pipeline the window handle so it can sink
@@ -255,7 +266,7 @@ static void fileopen_cb (GtkButton *button)
     gtk_widget_set_sensitive(player_controls.fastrewind_button, TRUE);
 
 	attach_bus_cb();
-	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+
 }
 
 static void fastforward_cb (GtkButton *button) 

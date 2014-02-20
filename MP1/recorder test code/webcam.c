@@ -7,17 +7,15 @@ int main(int argc, char * argv[])
 	GstMessage* msg;
 	GstStateChangeReturn ret;
 
-	gst_init(&argc, &argv);
-	gtk_init(&argc, &argv);
+	gst_init(&argc, &argv); // gstreamer initialization
+	gtk_init(&argc, &argv);// gtk initialization 
 	memset(&data,0,sizeof(data));
 	
 	data.Mode = STREAM;
 	data.audio_encoder = ALAW;
 	data.video_encoder = MJPEG;
-    
 	create_ui();
-
-	assemble_pipeline();
+	start_streamer();
 	attach_bus_cb();
 	gst_element_set_state(data.pipeline, GST_STATE_PLAYING);	
 

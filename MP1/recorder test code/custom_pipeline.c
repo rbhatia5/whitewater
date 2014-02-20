@@ -1,7 +1,7 @@
 #include "CustomData.h"
 
 static CustomData data;
-
+static PlayerControls player_controls;
 /* This function will be called by the pad-added signal */
 static void pad_added_handler (GstElement *src, GstPad *new_pad,gboolean b) 
 {
@@ -55,81 +55,61 @@ exit:
 
 
 /*
-Author		: Zain, Kristian
+Author		: Zain, Kristian, Ramit
 Function	: construct_pipeline
 Purpose		: This function is called to construct a pipeline, from start to finish. 
 Arguments	: CustomData structure that holds our pipeline
 Returns		: T/F
 */
-static void assemble_pipeline()
-{
-	gboolean ret;
-	GstPadTemplate *tee_src_pad_template;
-	GstPad *tee_player_pad, *tee_file_pad;
-	GstPad *queue_player_pad, *queue_file_pad;
 
-	data.pipeline = gst_pipeline_new("test-pipeline");
-	if(!data.pipeline)
-	{
-		ret = FALSE;
-		g_print("Couldn't initialize pipeline.\n");
-	}
-	switch(data.Mode)
-	{
-	    case PLAYER:	    
-	        data.pipeline = gst_pipeline_new("test-pipeline");
+static gboolean start_streamer() {
+			g_print("CONNECTING STREAM.\n");
+			data.pipeline = gst_pipeline_new("stream-pipeline");
+			data.source = gst_element_factory_make("v4l2src", "webcam");
+			if(!data.source) {
+				g_print("SOURCE FAILED.\n");
+			}
+			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
+			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
+			gst_element_link(data.source, data.sink2);
+}
+
+static gboolean start_player(char* filename) {
+			data.pipeline = gst_pipeline_new("player-pipeline");
             data.source = gst_element_factory_make("filesrc", "fileSource");
+            g_object_set (data.source, "location", filename, NULL);
             data.decoder = gst_element_factory_make("decodebin2", "decodebin2"); 
             data.sink2 = gst_element_factory_make("xvimagesink", "applicationsink");
             g_signal_connect(data.decoder, "new-decoded-pad", G_CALLBACK (pad_added_handler), NULL);
             gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.decoder, data.sink2, NULL);
             gst_element_link_many(data.source, data.decoder, data.sink2, NULL);
-	        break;
-	        
-		case STREAM:
-			g_print("CONNECTING STREAM.\n");
-			data.pipeline = gst_pipeline_new("test-pipeline");
-			data.source = gst_element_factory_make("v4l2src", "webcam");
-			if(!data.source)
-			{
-				ret = FALSE;
-				g_print("SOURCE FAILED.\n");
-			}
-			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
+}
 
-			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.sink2, NULL);
-			gst_element_link(data.source, data.sink2);
-			break;
-
-		case RECORD_VIDEO:
+static gboolean start_video_recorder() {
+			GstPad *tee_player_pad, *tee_file_pad;
+			GstPad *queue_player_pad, *queue_file_pad;
 			g_print("RECORDING VIDEO.\n");
-			data.pipeline = gst_pipeline_new("test-pipeline");
+			data.pipeline = gst_pipeline_new("video-recorder-pipeline");
 			data.source = gst_element_factory_make("v4l2src", "webcam");
-			if(!data.source)
-			{
-				ret = FALSE;
+			if(!data.source) {
 				g_print("SOURCE FAILED.\n");
+				return FALSE;
 			}
-			
-
 			data.enc_caps = gst_caps_new_simple (
 				"video/x-raw-yuv", 
 				"width", G_TYPE_INT, 320, 
 				"height", G_TYPE_INT, 240, 
 				"framerate", GST_TYPE_FRACTION, 20,1,
 				NULL);
-				
-			if(!data.enc_caps)
-			{
-				ret = FALSE;
+			if(!data.enc_caps){
 				g_print("Caps structure could not be initialized.\n");
+				return FALSE;
 			}
 	
 			data.colorspace = gst_element_factory_make("ffmpegcolorspace", "cs");
-			if(!data.colorspace)
-			{
-				ret = FALSE;
+			if(!data.colorspace) {				
 				g_print("COLORSPACE FAILED.\n");
+				return FALSE;
 			}
 
 			switch(data.video_encoder)
@@ -145,22 +125,24 @@ static void assemble_pipeline()
 			}
 			if(!data.encoder)
 			{
-				ret = FALSE;
 				g_print("ENCODER FAILED.\n");
+				return FALSE;
 			}
 
 			data.mux = gst_element_factory_make("avimux", "mux");
 			if(!data.mux)
 			{
-				ret = FALSE;
 				g_print("MUX FAILED.\n");
+				return FALSE;
 			}
 			data.sink = gst_element_factory_make("filesink", "filesink");
 			if(!data.sink)
 			{
-				ret = FALSE;
 				g_print("FSINK FAILED.\n");
+				return FALSE;
 			}
+			
+			//save recording video here
 			g_object_set(G_OBJECT(data.sink), "location", "1.mp4",NULL);
 
 			data.sink2 = gst_element_factory_make("xvimagesink", "playersink");
@@ -172,9 +154,12 @@ static void assemble_pipeline()
 			gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.colorspace, data.encoder, data.mux, data.tee, data.player_queue, data.file_queue, data.sink, data.sink2, NULL);
 			gst_element_link(data.source, data.tee);
 			//gboolean link_ok = gst_element_link_filtered (data.file_queue, data.colorspace, data.enc_caps);
-			gst_element_link_filtered (data.file_queue, data.colorspace, data.enc_caps);
-			gst_element_link_many(data.colorspace, data.encoder, data.mux, data.sink, NULL);
-			gst_element_link_many(data.player_queue, data.sink2, NULL);
+			if(!gst_element_link_filtered (data.file_queue, data.colorspace, data.enc_caps))
+				g_print("data.file_queue, data.colorspace, data.enc_caps link failed\n");
+			if(gst_element_link_many(data.colorspace, data.encoder, data.mux, data.sink, NULL))
+				g_print("ddata.colorspace, data.encoder, data.mux, data.sink link failed\n");
+			if(gst_element_link_many(data.player_queue, data.sink2, NULL))
+				g_print("data.player_queue, data.sink2 link failed\n");
 	
 			//tee_src_pad_template = gst_element_get_compatible_pad_template (GST_ELEMENT_GET_CLASS (data.tee), "src%d");
 			//tee_player_pad = gst_pad_new_from_template(tee_src_pad_template,"src%d");
@@ -192,19 +177,18 @@ static void assemble_pipeline()
 			}
 			gst_object_unref (queue_file_pad);
 			gst_object_unref (queue_player_pad);
-			break;
+}
 
-		case RECORD_AUDIO:
+static gboolean start_audio_recorder() {
 			g_print("RECORDING AUDIO.\n");
-			data.pipeline = gst_pipeline_new("test-pipeline");
+			data.pipeline = gst_pipeline_new("audio-pipeline");
 			data.source = gst_element_factory_make("alsasrc", "source");
 			if(!data.source)
 			{
-				ret = FALSE;
 				g_print("SOURCE FAILED.\n");
+				return FALSE;
 			}
 			g_object_set(data.source, "device", "hw:2", NULL);
-			
 			data.enc_caps = gst_caps_new_simple (
 				"audio/x-raw-int", 
 				"rate", G_TYPE_INT, 44100, 
@@ -212,17 +196,14 @@ static void assemble_pipeline()
 				NULL);
 			if(!data.enc_caps)
 			{
-				ret = FALSE;
 				g_print("Caps structure could not be initialized.\n");
+				return FALSE;
 			}
-
-
-
 			data.sink = gst_element_factory_make("filesink", "filesink");
 			if(!data.sink)
 			{
-				ret = FALSE;
 				g_print("FSINK FAILED.\n");
+				return FALSE;
 			}
             switch(data.audio_encoder)
 			{
@@ -247,17 +228,10 @@ static void assemble_pipeline()
 				    g_object_set(G_OBJECT(data.sink), "location", "audio_rec.mkv",NULL);
 			        gst_bin_add_many(GST_BIN(data.pipeline), data.source, data.audioconvert, data.encoder, data.mux, data.sink, NULL);
 			        gst_element_link_many(data.source, data.audioconvert, data.encoder, data.mux, data.sink, NULL);				    
-				    break;
-				default:
-					break;
-		    }
-			break;
-		default:
-			break;
-	}
+}
 }
 
-static void disassemble_pipeline()
+static gboolean disassemble_pipeline()
 {
 	gst_element_set_state(data.pipeline, GST_STATE_READY);
 	gst_element_set_state(data.pipeline, GST_STATE_NULL);

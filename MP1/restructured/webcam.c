@@ -11,7 +11,6 @@ int main(int argc, char * argv[])
 	gtk_init(&argc, &argv);// gtk initialization 
 	memset(&data,0,sizeof(data));
 	
-	data.Mode = STREAM;
 	data.audio_encoder = ALAW;
 	data.video_encoder = MJPEG;
 	create_ui();

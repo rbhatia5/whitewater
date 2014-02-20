@@ -10,22 +10,16 @@ static void create_ui()
 	GtkWidget *controls;
 	GtkWidget *slider;
 	GtkWidget *radio_hbox;
-	GtkWidget *audio_vbox;
-	GtkWidget *video_vbox;
-	GtkWidget *record_video_button, *record_audio_button;
-	//player
-	GtkWidget *play_button, *pause_button, *stop_button, *fileopen_button, *fastforward_button, *fastrewind_button;;
+
+	//player subcontrols
 	GtkWidget *audio_encoding_1, *audio_encoding_2, *audio_encoding_3, *video_encoding_1, *video_encoding_2;
 	GSList * audio_radio_buttons, *video_radio_buttons;
     GtkTextBuffer *buffer;
     GtkTextTagTable *table;
     
-    //player
-    dialog_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    data.dialog_window = dialog_window;
-
 	//make the main window and attach a delete window handler to it
 	main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+	data.main_window = main_window;
 	gtk_window_set_title(GTK_WINDOW(main_window), "vPlayer");
 	g_signal_connect(main_window, "delete-event", G_CALLBACK(delete_event_cb), NULL);
 	
@@ -34,31 +28,54 @@ static void create_ui()
 	g_signal_connect (video_window, "realize", G_CALLBACK (realize_cb), NULL);
 	gtk_widget_set_double_buffered (video_window, FALSE);
 
-	//initialize the buttons, attach callbacks
-	record_video_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
-	g_signal_connect(record_video_button, "clicked", G_CALLBACK(record_video_cb), NULL);
-	gtk_button_set_label(record_video_button, "Record Video");
-	record_audio_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
-	g_signal_connect(record_audio_button, "clicked", G_CALLBACK(record_audio_cb), NULL);
-	gtk_button_set_label(record_audio_button, "Record Audio");
-	play_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
-	g_signal_connect(play_button, "clicked", G_CALLBACK(play_cb), NULL);
-	pause_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PAUSE);
-	g_signal_connect(pause_button, "clicked", G_CALLBACK(pause_cb), NULL);
-	stop_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_STOP);
-	g_signal_connect(stop_button, "clicked", G_CALLBACK(stop_cb), NULL);
+	//initialize the buttons, attach callbacks and making them insensitive on initialization
+	player_controls.record_video_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
+	g_signal_connect(player_controls.record_video_button, "clicked", G_CALLBACK(record_video_cb), NULL);
+	gtk_button_set_label(player_controls.record_video_button, "Record Video");
+	gtk_widget_set_sensitive(player_controls.record_video_button, FALSE);
 	
-	//player
-	fastforward_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_FORWARD);
-    g_signal_connect (G_OBJECT (fastforward_button), "clicked", G_CALLBACK (fastforward_cb), NULL);
-    fastrewind_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_REWIND);
-    g_signal_connect (G_OBJECT (fastrewind_button), "clicked", G_CALLBACK (rewind_cb), NULL);
-    fileopen_button = gtk_button_new_with_label ("Open File");
-    g_signal_connect (G_OBJECT (fileopen_button), "clicked", G_CALLBACK (fileopen_cb), NULL);  
+	player_controls.record_audio_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_RECORD);
+	g_signal_connect(player_controls.record_audio_button, "clicked", G_CALLBACK(record_audio_cb), NULL);
+	gtk_button_set_label(player_controls.record_audio_button, "Record Audio");
+	gtk_widget_set_sensitive(player_controls.record_audio_button, FALSE);
+	
+	player_controls.play_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
+	g_signal_connect(player_controls.play_button, "clicked", G_CALLBACK(play_cb), NULL);
+	gtk_widget_set_sensitive(player_controls.play_button, FALSE);
+	
+	player_controls.pause_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PAUSE);
+	g_signal_connect(player_controls.pause_button, "clicked", G_CALLBACK(pause_cb), NULL);
+	gtk_widget_set_sensitive(player_controls.pause_button, FALSE);
+	
+	player_controls.stop_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_STOP);
+	g_signal_connect(player_controls.stop_button, "clicked", G_CALLBACK(stop_cb), NULL);
+	gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
+	
+	//main player button 
+	player_controls.player_button = gtk_button_new_with_label("Player");
+	g_signal_connect(player_controls.player_button, "clicked", G_CALLBACK(player_cb), NULL);
+	
+	//main recorder button
+	player_controls.recorder_button = gtk_button_new_with_label("Recorder");
+	g_signal_connect(player_controls.recorder_button, "clicked", G_CALLBACK(recorder_cb), NULL);
+	
+	player_controls.fastforward_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_FORWARD);
+    g_signal_connect (G_OBJECT (player_controls.fastforward_button), "clicked", G_CALLBACK (fastforward_cb), NULL);
+    gtk_widget_set_sensitive(player_controls.fastforward_button, FALSE);
+    
+    player_controls.fastrewind_button = gtk_button_new_from_stock (GTK_STOCK_MEDIA_REWIND);
+    g_signal_connect (G_OBJECT (player_controls.fastrewind_button), "clicked", G_CALLBACK (rewind_cb), NULL);
+    gtk_widget_set_sensitive(player_controls.fastrewind_button, FALSE);
+    
+    player_controls.fileopen_button = gtk_button_new_with_label ("Open File");
+    g_signal_connect (G_OBJECT (player_controls.fileopen_button), "clicked", G_CALLBACK (fileopen_cb), NULL);  
+    gtk_widget_set_sensitive(player_controls.fileopen_button, FALSE);
+    
     data.slider = gtk_hscale_new_with_range (0, 100, 1);
     gtk_scale_set_draw_value (GTK_SCALE (data.slider), 0);
-    data.slider_update_signal_id = g_signal_connect (G_OBJECT (data.slider), "value-changed",  	G_CALLBACK (slider_cb), NULL);
-
+    //data.slider_update_signal_id = g_signal_connect (G_OBJECT (data.slider), "value-changed",  	G_CALLBACK (slider_cb), NULL);
+	gtk_widget_set_sensitive(data.slider, FALSE);
+	
     //Code for Monitor
     table = gtk_text_tag_table_new();
     buffer = gtk_text_buffer_new(table);
@@ -87,33 +104,37 @@ static void create_ui()
 	g_signal_connect(video_encoding_1, "toggled", G_CALLBACK(video_encoding_cb), NULL);
 	g_signal_connect(video_encoding_2, "toggled", G_CALLBACK(video_encoding_cb), NULL);
 
-	//vbox for audio
-	audio_vbox = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(audio_vbox), audio_encoding_1, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(audio_vbox), audio_encoding_2, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(audio_vbox), audio_encoding_3, FALSE, FALSE, 2);
+	//vbox for Audio
+	player_controls.audio_vbox = gtk_vbox_new(FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(player_controls.audio_vbox), audio_encoding_1, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(player_controls.audio_vbox), audio_encoding_2, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(player_controls.audio_vbox), audio_encoding_3, FALSE, FALSE, 2);
+	gtk_widget_set_sensitive(player_controls.audio_vbox, FALSE);
 	
-	//vbox for audio
-	video_vbox = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(video_vbox), video_encoding_1, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(video_vbox), video_encoding_2, FALSE, FALSE, 2);
+	//vbox for Video
+	player_controls.video_vbox = gtk_vbox_new(FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(player_controls.video_vbox), video_encoding_1, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(player_controls.video_vbox), video_encoding_2, FALSE, FALSE, 2);
+	gtk_widget_set_sensitive(player_controls.video_vbox, FALSE);
 	
-	//hbox for the radio buttons
+	//hbox for the radio buttons and Player Recorder Selection
 	radio_hbox = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(radio_hbox), audio_vbox, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(radio_hbox), video_vbox, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.recorder_button, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.player_button, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.audio_vbox, FALSE, FALSE, 20);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.video_vbox, FALSE, FALSE, 2);
 	
 	//initialize controls hbox and add buttons to it
 	controls = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (controls), fastrewind_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), play_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), pause_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), stop_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), fastforward_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), play_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), fileopen_button, FALSE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(controls), record_video_button, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(controls), record_audio_button, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (controls), player_controls.fastrewind_button, FALSE, FALSE, 2);
+    gtk_box_pack_start (GTK_BOX (controls), player_controls.play_button, FALSE, FALSE, 2);
+    gtk_box_pack_start (GTK_BOX (controls), player_controls.pause_button, FALSE, FALSE, 2);
+    gtk_box_pack_start (GTK_BOX (controls), player_controls.stop_button, FALSE, FALSE, 2);
+    gtk_box_pack_start (GTK_BOX (controls), player_controls.fastforward_button, FALSE, FALSE, 2);
+    gtk_box_pack_start (GTK_BOX (controls), player_controls.play_button, FALSE, FALSE, 2);
+    gtk_box_pack_start (GTK_BOX (controls), player_controls.fileopen_button, FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(controls), player_controls.record_video_button, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(controls), player_controls.record_audio_button, FALSE, FALSE, 2);
     //gtk_box_pack_start (GTK_BOX (controls), data.slider, TRUE, TRUE, 2);
 
     slider = gtk_hbox_new(FALSE, 0);
