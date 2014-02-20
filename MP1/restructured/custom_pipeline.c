@@ -335,7 +335,7 @@ static gboolean disassemble_pipeline()
 	if(data.pipeline!=NULL) {
 	gst_element_set_state(data.pipeline, GST_STATE_READY);
 	gst_element_set_state(data.pipeline, GST_STATE_NULL);
-	g_object_unref(data.pipeline);
+	gst_object_unref(data.pipeline);
 	data.pipeline = NULL;
 	}
 	//
@@ -353,3 +353,5 @@ static gboolean disassemble_pipeline()
 	//gst_element_link(data.mux, data.sink);
 	//gst_element_set_state(data.sink, GST_STATE_READY);
 }
+
+

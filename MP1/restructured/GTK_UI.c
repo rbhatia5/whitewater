@@ -8,7 +8,6 @@ static void create_ui()
 	GtkWidget *main_box;
 	GtkWidget *main_hbox;
 	GtkWidget *controls;
-	GtkWidget *slider;
 	GtkWidget *radio_hbox;
 
 	//player subcontrols
@@ -71,11 +70,6 @@ static void create_ui()
     g_signal_connect (G_OBJECT (player_controls.fileopen_button), "clicked", G_CALLBACK (fileopen_cb), NULL);  
     gtk_widget_set_sensitive(player_controls.fileopen_button, FALSE);
     
-    data.slider = gtk_hscale_new_with_range (0, 100, 1);
-    gtk_scale_set_draw_value (GTK_SCALE (data.slider), 0);
-    //data.slider_update_signal_id = g_signal_connect (G_OBJECT (data.slider), "value-changed",  	G_CALLBACK (slider_cb), NULL);
-	gtk_widget_set_sensitive(data.slider, FALSE);
-	
     //Code for Monitor
     table = gtk_text_tag_table_new();
     buffer = gtk_text_buffer_new(table);
@@ -119,10 +113,13 @@ static void create_ui()
 	
 	//hbox for the radio buttons and Player Recorder Selection
 	radio_hbox = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.recorder_button, FALSE, FALSE, 2);
 	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.player_button, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (radio_hbox), player_controls.fileopen_button, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.recorder_button, FALSE, FALSE, 50);
 	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.audio_vbox, FALSE, FALSE, 20);
 	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.video_vbox, FALSE, FALSE, 2);
+	 gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.record_video_button, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.record_audio_button, FALSE, FALSE, 2);
 	
 	//initialize controls hbox and add buttons to it
 	controls = gtk_hbox_new(FALSE, 0);
@@ -132,14 +129,8 @@ static void create_ui()
     gtk_box_pack_start (GTK_BOX (controls), player_controls.stop_button, FALSE, FALSE, 2);
     gtk_box_pack_start (GTK_BOX (controls), player_controls.fastforward_button, FALSE, FALSE, 2);
     gtk_box_pack_start (GTK_BOX (controls), player_controls.play_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), player_controls.fileopen_button, FALSE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(controls), player_controls.record_video_button, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(controls), player_controls.record_audio_button, FALSE, FALSE, 2);
-    //gtk_box_pack_start (GTK_BOX (controls), data.slider, TRUE, TRUE, 2);
-
-    slider = gtk_hbox_new(FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (slider), data.slider, TRUE, TRUE, 2);
-
+   
+    
 	//initialize main hbox to hold video
 	main_hbox = gtk_hbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(main_hbox), video_window, TRUE, TRUE, 0);
@@ -150,7 +141,7 @@ static void create_ui()
 	gtk_box_pack_start(GTK_BOX(main_box), radio_hbox, FALSE, FALSE, 2);
 	gtk_box_pack_start(GTK_BOX(main_box), main_hbox, TRUE, TRUE, 2);
 	gtk_box_pack_start(GTK_BOX(main_box), controls, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(main_box), slider, FALSE, FALSE, 2);
+
 
 	// usually the video_window will not be directly embedded into the
 	// application window like this, but there will be many other widgets

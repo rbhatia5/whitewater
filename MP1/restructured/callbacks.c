@@ -16,6 +16,52 @@ static void audio_encoding_cb(GtkWidget* widget, GdkEvent * eventt);
 static void realize_cb(GtkWidget *widget);
 static void application_cb (GstBus *bus, GstMessage *msg);
 
+
+/*
+Acknowledgement for move_file:
+http://stackoverflow.com/questions/2180079/how-can-i-copy-a-file-on-unix-using-c
+*/
+static void move_file(char *source, char *dest)
+{
+    int childExitStatus;
+    pid_t pid;
+    int status;
+    if (!source || !dest) {
+        /* handle as you wish */
+    }
+
+    pid = fork();
+
+    if (pid == 0) { /* child */
+        execl("/bin/cp", "/bin/cp", source, dest, (char *)0);
+    }
+    else if (pid < 0) {
+        /* error - couldn't start process - you decide how to handle */
+    }
+    else {
+        /* parent - wait for child - this has all error handling, you
+         * could just call wait() as long as you are only expecting to
+         * have one child process at a time.
+         */
+        pid_t ws = waitpid( pid, &childExitStatus, WNOHANG);
+        if (ws == -1)
+        { /* error - handle as you wish */
+        }
+
+        if( WIFEXITED(childExitStatus)) /* exit code in childExitStatus */
+        {
+            status = WEXITSTATUS(childExitStatus); /* zero is normal exit */
+            /* handle non-zero as you wish */
+        }
+        else if (WIFSIGNALED(childExitStatus)) /* killed */
+        {
+        }
+        else if (WIFSTOPPED(childExitStatus)) /* stopped */
+        {
+        }
+    }
+}
+
 static GstBusSyncReply bus_sync_handler (GstBus * bus, GstMessage * message)
 {
 	// ignore anything but 'prepare-xwindow-id' element messages
@@ -107,16 +153,25 @@ static void stop_cb(GtkWidget* widget, GdkEvent * eventt) {
 		start_streamer();
 		attach_bus_cb();
 		gtk_widget_set_sensitive(player_controls.stop_button, FALSE);
+		GtkWidget *dialog;
+     	dialog = gtk_file_chooser_dialog_new ("Save File",
+     				      data.main_window,
+     				      GTK_FILE_CHOOSER_ACTION_SAVE,
+     				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+     				      GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+     				      NULL);
+     				      gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dialog), TRUE);
+     				      if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT) {
+         					char *filename;
+     	 					filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+         					move_file ("1.mp4",filename);
+         					//g_free (filename);
+         					}
+     gtk_widget_destroy (dialog);
 		break;
 	default:
 		break;
 	}
-}
-
-//stop recording and save file
-static void stop_recording_cb() {
-	disassemble_pipeline();
-	attach_bus_cb();
 }
 
 static void error_cb(GstBus * bus, GstMessage * msg)
