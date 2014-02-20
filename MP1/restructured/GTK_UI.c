@@ -113,10 +113,13 @@ static void create_ui()
 	
 	//hbox for the radio buttons and Player Recorder Selection
 	radio_hbox = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.recorder_button, FALSE, FALSE, 2);
 	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.player_button, FALSE, FALSE, 2);
+	gtk_box_pack_start (GTK_BOX (radio_hbox), player_controls.fileopen_button, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.recorder_button, FALSE, FALSE, 50);
 	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.audio_vbox, FALSE, FALSE, 20);
 	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.video_vbox, FALSE, FALSE, 2);
+	 gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.record_video_button, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(radio_hbox), player_controls.record_audio_button, FALSE, FALSE, 2);
 	
 	//initialize controls hbox and add buttons to it
 	controls = gtk_hbox_new(FALSE, 0);
@@ -126,9 +129,7 @@ static void create_ui()
     gtk_box_pack_start (GTK_BOX (controls), player_controls.stop_button, FALSE, FALSE, 2);
     gtk_box_pack_start (GTK_BOX (controls), player_controls.fastforward_button, FALSE, FALSE, 2);
     gtk_box_pack_start (GTK_BOX (controls), player_controls.play_button, FALSE, FALSE, 2);
-    gtk_box_pack_start (GTK_BOX (controls), player_controls.fileopen_button, FALSE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(controls), player_controls.record_video_button, FALSE, FALSE, 2);
-	gtk_box_pack_start(GTK_BOX(controls), player_controls.record_audio_button, FALSE, FALSE, 2);
+   
     
 	//initialize main hbox to hold video
 	main_hbox = gtk_hbox_new(FALSE, 0);
