@@ -20,6 +20,8 @@
 #include <gdk/gdkwin32.h>
 #elif defined (GDK_WINDOWING_QUARTZ)
 #include <gdk/gdkquartz.h>
+#include <stdio.h>
+#include <stdlib.h>
 #endif
 
 static gintptr video_window_xid = 0;
