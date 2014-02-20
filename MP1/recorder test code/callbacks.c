@@ -233,7 +233,7 @@ static void fileopen_cb (GtkButton *button)
 static void fastforward_cb (GtkButton *button) 
 {
     data.rate *= 2.0;
-    send_seek_event(data);
+    send_seek_event();
 }
 
 
@@ -307,14 +307,14 @@ static void send_seek_event ()
         GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_SET, position);
     }
    
-    if (data.video_sink == NULL) 
+    if (data.sink2 == NULL) 
     {
         /* If we have not done so, obtain the sink through which we will send the seek events */
-        g_object_get (data.pipeline, "video-sink", &data.video_sink, NULL);
+        g_object_get (data.pipeline, "video-sink", &data.sink2, NULL);
     }
    
     /* Send the event */
-    gst_element_send_event (data.video_sink, seek_event);
+    gst_element_send_event (data.sink2, seek_event);
    
     g_print ("Current rate: %g\n", data.rate);
 }
