@@ -1,11 +1,15 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.URL;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import org.gstreamer.*;
 import org.gstreamer.swing.*;
 
@@ -40,6 +44,10 @@ public class simplePipe
 	private static String file;
 	private static JPanel controls;
 	private static JTextArea monitor;
+	private static ClockTime duration;
+	private static JSlider slider;
+	private static boolean seekEnabled;
+	private static boolean seekDone;
 	
 /////////////////////////////////////////////////////////////////////MODIFY_PIPELINE///////////////////////////////////////////////////////////////////////////
 	
@@ -100,13 +108,21 @@ public class simplePipe
 		pipe = new Pipeline("player-pipeline");
 		
 		Element source = ElementFactory.make("filesrc", "source");
+		Element colorspace = ElementFactory.make("ffmpegcolorspace", "colorspace");
 		Element decoder = ElementFactory.make("decodebin2", "decoder");
 		
 		source.set("location", file);
+		Pad sourcePad = source.getStaticPad("src");
+		Caps sourceCaps = sourcePad.getCaps();
+		Caps colorspaceCaps = sourceCaps.copy();
+		System.out.println(colorspaceCaps.toString());
+		//Structure c = sourceCaps.getStructure(0);
+		//String capsString = "video/x-raw-yuv" + ",height=" + c.getValue("height") + ",width=" + c.getValue("width") + ",framerate=15" + ",format=\\(fourcc\\)" + c.getValue("format"); 
+		//String capsString = "video/x-raw-yuv,height=240,width=320,rate=15/1,framerate=15/1,format=\\(fourcc\\)I420";
+		//System.out.println(capsString);
+		//Caps colorspaceCaps = Caps.fromString(capsString);
 		
 		decoder.connect(new Element.PAD_ADDED() {
-			
-			@Override
 			public void padAdded(Element source, Pad newPad) {
 				System.out.printf("New pad %s added to %s\n", newPad.getName(), source.getName());
 				Pad sink_pad = windowSink.getStaticPad("sink");
@@ -119,9 +135,12 @@ public class simplePipe
 		});
 		
 		elems.add(source);
+		elems.add(colorspace);
 		elems.add(decoder);
 		
-		pipe.addMany(source, decoder, windowSink);
+		pipe.addMany(source, colorspace, decoder, windowSink);
+		//Element.linkPadsFiltered(source, "src", colorspace, "sink", colorspaceCaps);
+		//Element.linkMany(colorspace, decoder, windowSink);
 		Element.linkMany(source, decoder, windowSink);
 		//gray out undesired buttons
 		if(controlButtons.size() != 0)
@@ -287,12 +306,22 @@ public class simplePipe
 		
 		//connect to change of state
 		pipe.getBus().connect(new Bus.STATE_CHANGED() {
-			
 			@Override
 			public void stateChanged(GstObject source, State oldstate, State newstate, State pending) {
-				// TODO Auto-generated method stub
 				if(source.equals(pipe))
+				{
 					System.out.printf("[%s] changed state from %s to %s\n", source.getName(), oldstate.toString(), newstate.toString());
+					if(!duration.isValid())
+					{
+						duration = pipe.queryDuration();
+						//slider.set
+					}
+					if(newstate.equals(State.PLAYING))
+					{
+						seekEnabled = true;
+						seekDone = true;
+					}
+				}
 			}
 		});
 	}
@@ -395,6 +424,38 @@ public class simplePipe
 			}	
 		});
 		
+		//fast forward
+		JButton fastForwardButton = new JButton("Fastforward");
+		fastForwardButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				
+			}
+		});
+		
+		//rewind
+		JButton rewindButton = new JButton("Rewind");
+		rewindButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				
+			}
+		});
+		
+		slider = new JSlider(0,100,0);
+		slider.setMajorTickSpacing(10);
+		slider.addChangeListener(new ChangeListener(){
+			public void stateChanged(ChangeEvent e) {
+				System.out.println("CHANGER");
+				//when state changes, get the new position
+				if(!slider.getValueIsAdjusting())
+				{
+					long position = slider.getValue();
+					System.out.println(pipe.queryDuration().toSeconds() * position/100);
+					//move stream to that position
+					pipe.seek(pipe.queryDuration().toSeconds() * position/100, TimeUnit.SECONDS);
+				}
+			}
+		});
+		
 		JPanel controls = new JPanel();
 		controls.add(player_button);
 		controls.add(recorder_button);
@@ -402,6 +463,9 @@ public class simplePipe
 		controls.add(pauseButton);
 		controls.add(stopButton);
 		controls.add(recordButton);
+		controls.add(fastForwardButton);
+		controls.add(rewindButton);
+		controls.add(slider);
 		
 		//add buttons to list
 		controlButtons.add(playButton);
@@ -411,6 +475,8 @@ public class simplePipe
 		controlButtons.add(fileOpenButton);
 		controlButtons.add(recorder_button);
 		controlButtons.add(player_button);
+		controlButtons.add(fastForwardButton);
+		controlButtons.add(rewindButton);
 		
 		//define layout
 		GroupLayout layout = new GroupLayout(controls);
@@ -418,26 +484,34 @@ public class simplePipe
 		layout.setAutoCreateContainerGaps(true);
 		
 		layout.setHorizontalGroup(
-				layout.createSequentialGroup()						
-				.addComponent(playButton)
-				.addComponent(pauseButton)
-				.addComponent(stopButton)
-				.addComponent(recordButton)
-				.addComponent(fileOpenButton)
-				.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED,
-	         GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-				.addComponent(recorder_button)
-				.addComponent(player_button)
-		);
+				layout.createParallelGroup()
+					.addGroup(layout.createSequentialGroup()
+						.addComponent(rewindButton)
+						.addComponent(playButton)
+						.addComponent(pauseButton)
+						.addComponent(fastForwardButton)
+						.addComponent(stopButton)
+						.addComponent(recordButton)
+						.addComponent(fileOpenButton)
+						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED,
+				         GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(recorder_button)
+						.addComponent(player_button))
+					.addComponent(slider)
+		);				
 		layout.setVerticalGroup(
-				layout.createParallelGroup()						
-				.addComponent(playButton)
-				.addComponent(pauseButton)
-				.addComponent(stopButton)
-				.addComponent(recordButton)
-				.addComponent(fileOpenButton)
-				.addComponent(recorder_button)
-				.addComponent(player_button)
+				layout.createSequentialGroup()
+					.addGroup(layout.createParallelGroup()
+						.addComponent(rewindButton)
+					    .addComponent(playButton)
+					    .addComponent(pauseButton)
+					    .addComponent(fastForwardButton)
+					    .addComponent(stopButton)
+					    .addComponent(recordButton)
+					    .addComponent(fileOpenButton)
+					    .addComponent(recorder_button)
+					    .addComponent(player_button))
+				    .addComponent(slider)
 		);
 		controls.setLayout(layout);
 		return controls;
@@ -446,7 +520,7 @@ public class simplePipe
 	
 /////////////////////////////////////////////////////////////////////CREATE_USER_OPTIONS_PANEL///////////////////////////////////////////////////////////////////////////
 
-static JPanel createUserOptionsPanel()
+	static JPanel createUserOptionsPanel()	
 {
 	//resolution options
 	String[] resList = {"320x240", "640x480", "960x720", "1280x1080"};
@@ -474,7 +548,7 @@ static JPanel createUserOptionsPanel()
 	});
 	//resolution list picker
 	JComboBox frCB = new JComboBox(frList);
-	frCB.setPreferredSize(new Dimension(100,50));
+	frCB.setPreferredSize(new Dimension(10,10));
 	frCB.setSelectedIndex(0);
 	frCB.setPreferredSize(new Dimension(70,30));
 	frCB.addActionListener(new ActionListener(){
@@ -649,6 +723,8 @@ static JPanel createUserOptionsPanel()
 		resolution = ",width=640, height=480";
 		frameRate = ",framerate=10/1";
 		file = "Cranes.mpg";
+		seekEnabled = false;
+		seekDone = true;
 		
 		//initialize static window reference
 		vid_comp = new VideoComponent();
@@ -679,6 +755,10 @@ static JPanel createUserOptionsPanel()
 	            vid_comp.setPreferredSize(new Dimension(640, 480)); 
 	            frame.setSize(1080, 920);
 	            frame.setVisible(true);
+	            
+	            //update slider
+	            slider.setValue(slider.getValue() + 1);
+	          
 	        } 
 	    });
 		pipe.setState(State.NULL);
