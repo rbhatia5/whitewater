@@ -3,6 +3,9 @@ package vClient;
 
 import org.gstreamer.*;
 import org.gstreamer.elements.good.RTPBin;
+import java.io.*;
+import java.net.*;
+
 
 public class vClientManager {
 
@@ -10,6 +13,44 @@ public class vClientManager {
 	
 	public static void main(String[] args)
 	{
+		
+		
+		Socket sock;
+		try {
+			sock = new Socket("localhost", 5002);
+			TCPClient client = new TCPClient(sock);
+			client.push("Hello Server!");
+			System.out.println("Hello Server!");
+			client.waitForResponse();
+			//System.out.println("Server told Client: " + message);
+			client.push("How are you?");
+			System.out.println("How are you?");
+			client.waitForResponse();
+			
+			
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		args = Gst.init("Client Pipeline", args);
 		pipe = new Pipeline("client-pipeline");
 		
@@ -46,6 +87,9 @@ public class vClientManager {
 		System.out.println("9 " + link);
 		link = Element.linkMany(depay, decoder, sink);
 		System.out.println("10 " + link);
+		
+		
+		
 		
 		pipe.setState(State.PLAYING);
 		Gst.main();
