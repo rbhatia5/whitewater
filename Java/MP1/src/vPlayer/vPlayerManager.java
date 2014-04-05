@@ -20,7 +20,7 @@ public class vPlayerManager {
 	{
 		//initialize GStreamer
 		args = Gst.init("Simple Pipeline", args);
-		/*
+		
 		//set startup mode
 		PlayerData.mode = PlayerData.Mode.PLAYER;
 		PlayerData.vidEnc = PlayerData.VideoEncoding.MJPEG;
@@ -72,10 +72,10 @@ public class vPlayerManager {
 	            });	
 	            timer.start();
 	            */
-		/*
+		
 	        } 
 	    });
-		*/
+		
 		
 		////////////////////////////////////////////////////SERVER//////////////////////////////////////////////////////////
 		/*
@@ -117,7 +117,7 @@ public class vPlayerManager {
 		
 		
 		////////////////////////////////////////////////////CLIENT//////////////////////////////////////////////////////////
-		
+		/*
 		pipe = new Pipeline("client-pipeline");
 		
 		Element udpSrc = ElementFactory.make("udpsrc", "udp-src");
@@ -139,23 +139,23 @@ public class vPlayerManager {
 		rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
 				System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
+				Pad depaySink = pipe.getElementByName("depay").getStaticPad("sink");
+				PadLinkReturn ret = newPad.link(depaySink);
+				System.out.println(ret.toString());
 			}
 		});
 		
 		pipe.addMany(udpSrc, rtpBin, depay, decoder, sink);
 		
-		Pad recv_rtp_sink_0 = rtpBin.getRequestPad("recv_rtp_sink_0");
-		System.out.println("7 " + recv_rtp_sink_0);
-		Pad udpSrcPad = udpSrc.getStaticPad("src");
-		System.out.println("8 " + udpSrcPad);
-		//PadLinkReturn ret = udpSrcPad.link(recv_rtp_sink_0);
-		//System.out.println("9 " + ret.toString());
-		boolean link = Element.linkMany(depay, decoder, sink);
+		boolean link = Element.linkMany(udpSrc, rtpBin);
+		System.out.println("9 " + link);
+		link = Element.linkMany(depay, decoder, sink);
 		System.out.println("10 " + link);
 		
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		pipe.setState(State.PLAYING);
 		Gst.main();
+		*/
 	}
 }
