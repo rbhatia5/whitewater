@@ -1,15 +1,7 @@
 package vClient;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File;
-
-import javax.swing.*;
 
 import org.gstreamer.*;
-import org.gstreamer.swing.*;
-import org.gstreamer.elements.*;
 import org.gstreamer.elements.good.RTPBin;
 
 public class vClientManager {
@@ -39,10 +31,12 @@ public class vClientManager {
 		
 		rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
+				if("recv_rtp_src_0".equals(newPad.getName())) {
 				System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
 				Pad depaySink = pipe.getElementByName("depay").getStaticPad("sink");
 				PadLinkReturn ret = newPad.link(depaySink);
 				System.out.println(ret.toString());
+				}
 			}
 		});
 		

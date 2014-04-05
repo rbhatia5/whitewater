@@ -1,20 +1,14 @@
 package vPlayer;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File;
 
 import javax.swing.*;
 
 import org.gstreamer.*;
 import org.gstreamer.swing.*;
-import org.gstreamer.elements.*;
-import org.gstreamer.elements.good.RTPBin;
-
 public class vPlayerManager {
 	
-	private static Pipeline pipe;
+	//private static Pipeline pipe;
 	
 	public static void main(String[] args)
 	{

@@ -1,15 +1,6 @@
 package vServer;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File;
-
-import javax.swing.*;
-
 import org.gstreamer.*;
-import org.gstreamer.swing.*;
-import org.gstreamer.elements.*;
 import org.gstreamer.elements.good.RTPBin;
 import org.gstreamer.Pipeline;
 
@@ -32,6 +23,8 @@ public class vServerManager {
 		if(source == null || encoder == null || pay == null || rtpBin == null || udpSink == null)
 			System.err.println("Could not create all elements");
 		
+		//source.set("device", "/dev/video1");
+		
 		pipe.addMany(source, encoder, pay, rtpBin, udpSink);
 		
 		Element.linkMany(source, encoder, pay);
@@ -41,10 +34,18 @@ public class vServerManager {
 		
 		rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
-				System.out.printf("New pad %s added to %s\n", newPad.getName(), source.getName());
-				Pad udpSinkPad = pipe.getElementByName("udpsink").getStaticPad("sink");
-				System.out.println(udpSinkPad.getName());
-				newPad.link(udpSinkPad);
+				
+				if(("send_rtp_src_0").equals(newPad.getName()))  {
+				
+					System.out.printf("New pad %s added to %s\n", newPad.getName(), source.getName());
+					Pad udpSinkPad = pipe.getElementByName("udpsink").getStaticPad("sink");
+					System.out.println(udpSinkPad.getName());
+					Pad rtpsrc = source.getRequestPad("send_rtp_src_0");
+					System.out.println(source.getPads().toString());
+					if( rtpsrc != null)
+							rtpsrc.link(udpSinkPad);
+				
+				}
 			}
 		});
 		
