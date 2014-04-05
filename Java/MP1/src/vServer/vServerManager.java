@@ -23,7 +23,7 @@ public class vServerManager {
 		if(source == null || encoder == null || pay == null || rtpBin == null || udpSink == null)
 			System.err.println("Could not create all elements");
 		
-		//source.set("device", "/dev/video1");
+		source.set("device", "/dev/video0");
 		
 		pipe.addMany(source, encoder, pay, rtpBin, udpSink);
 		
@@ -40,10 +40,10 @@ public class vServerManager {
 					System.out.printf("New pad %s added to %s\n", newPad.getName(), source.getName());
 					Pad udpSinkPad = pipe.getElementByName("udpsink").getStaticPad("sink");
 					System.out.println(udpSinkPad.getName());
-					Pad rtpsrc = source.getRequestPad("send_rtp_src_0");
+					
 					System.out.println(source.getPads().toString());
-					if( rtpsrc != null)
-							rtpsrc.link(udpSinkPad);
+					
+					newPad.link(udpSinkPad);
 				
 				}
 			}
@@ -54,6 +54,8 @@ public class vServerManager {
 		if(send_rtp_sink_0 == null || paySrcPad == null)
 			System.err.println("Could not create rtpbin.send_rtp_sink_0 or pay.src pad");
 		paySrcPad.link(send_rtp_sink_0);
+		
+		
 		
 		pipe.setState(State.PLAYING);
 		Gst.main();		

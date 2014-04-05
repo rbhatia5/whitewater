@@ -10,7 +10,7 @@ public class vClientManager {
 	
 	public static void main(String[] args)
 	{
-		args = Gst.init("Simple Pipeline", args);
+		args = Gst.init("Client Pipeline", args);
 		pipe = new Pipeline("client-pipeline");
 		
 		Element udpSrc = ElementFactory.make("udpsrc", "udp-src");
@@ -31,11 +31,11 @@ public class vClientManager {
 		
 		rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
-				if("recv_rtp_src_0".equals(newPad.getName())) {
-				System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
-				Pad depaySink = pipe.getElementByName("depay").getStaticPad("sink");
-				PadLinkReturn ret = newPad.link(depaySink);
-				System.out.println(ret.toString());
+				if(newPad.getName().contains("recv_rtp_src_0")) {
+					System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
+					Pad depaySink = pipe.getElementByName("depay").getStaticPad("sink");
+					PadLinkReturn ret = newPad.link(depaySink);
+					System.out.println(ret.toString());
 				}
 			}
 		});
