@@ -1,6 +1,10 @@
 package vPlayer;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+
 import org.gstreamer.*;
+import org.gstreamer.elements.AppSink;
 import org.gstreamer.event.SeekEvent;
 
 public class PipelineManager{
@@ -22,6 +26,7 @@ public class PipelineManager{
 			player_pipeline();
 			connect_to_signals();
 			PlayerData.pipe.setState(State.READY);
+			PlayerData.pipe.setState(State.PAUSED);
 			break;
 		case VIDEO_RECORDER:
 			System.out.println("Initializing video recorder");
@@ -29,6 +34,7 @@ public class PipelineManager{
 			videorecorder_pipeline();
 			connect_to_signals();
 			PlayerData.pipe.setState(State.READY);
+			PlayerData.pipe.setState(State.PAUSED);
 			break;
 		case AUDIO_RECORDER:
 			System.out.println("Initializing audio recorder");
@@ -36,6 +42,7 @@ public class PipelineManager{
 			audiorecorder_pipeline();
 			connect_to_signals();
 			PlayerData.pipe.setState(State.READY);
+			PlayerData.pipe.setState(State.PAUSED);			
 			break;
 		default:
 			System.out.println("Unrecognized pipeline");
@@ -59,6 +66,8 @@ public class PipelineManager{
 			//need to explicitly remove windowSink
 			PlayerData.pipe.setState(State.READY);
 			PlayerData.pipe.remove(PlayerData.windowSink);
+			PlayerData.pipe.remove(PlayerData.appSink);
+			PlayerData.appSink = null;
 			PlayerData.pipe.setState(State.NULL);
 		}
 		for(int i=0; i < PlayerData.elems.size(); i++)
@@ -81,46 +90,91 @@ public class PipelineManager{
 		PlayerData.pipe = new Pipeline("player-pipeline");
 		
 		Element source = ElementFactory.make("filesrc", "source");
-		Element colorspace = ElementFactory.make("ffmpegcolorspace", "colorspace");
+		Element tee = ElementFactory.make("tee", "tee");
+		Element playerQueue = ElementFactory.make("queue", "player-queue");
+		Element monitorQueue = ElementFactory.make("queue", "monitor-queue");
 		Element decoder = ElementFactory.make("decodebin2", "decoder");
+		PlayerData.appSink = (AppSink) ElementFactory.make("appsink", "monitor");
+		//Element sink = ElementFactory.make("xvimagesink", "xsink");
 		
 		source.set("location", PlayerData.file);
-		
-		//set probes in the pads
-		//Pad decoderPad = decoder.getStaticPad("sink");
-		//decoderPad.addEventProbe(probeHandler);
-		//source.getStaticPad("src").addEventProbe(probeHandler);
-
-		/*Pad sourcePad = source.getStaticPad("src");
-		Caps sourceCaps = sourcePad.getCaps();
-		Caps colorspaceCaps = sourceCaps.copy();
-		System.out.println(colorspaceCaps.toString());
-		Structure c = sourceCaps.getStructure(0);
-		String capsString = "video/x-raw-yuv" + ",height=" + c.getValue("height") + ",width=" + c.getValue("width") + ",framerate=15" + ",format=\\(fourcc\\)" + c.getValue("format"); 
-		String capsString = "video/x-raw-yuv,height=240,width=320,rate=15/1,framerate=15/1,format=\\(fourcc\\)I420";
-		System.out.println(capsString);
-		Caps colorspaceCaps = Caps.fromString(capsString);*/
+		tee.set("silent", "false");
+		PlayerData.appSink.set("emit-signals", true);
+		PlayerData.appSink.connect(new AppSink.NEW_BUFFER() {
+			public void newBuffer(AppSink appSink) {
+				//take timestamp between new buffers, and record that as the time to decompress
+				long time = System.nanoTime();
+				String decompressionTime = "Decompression time(ns): " + (time - PlayerData.timeStamp) + "\n";
+				PlayerData.monitor.append(decompressionTime);
+				PlayerData.timeStamp = time;
+				Buffer buffer = appSink.pullBuffer();
+				System.out.printf("Size: %s Offset: %s\n", buffer.getSize(), buffer.getOffset());
+			}
+		});
 		
 		decoder.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
 				System.out.printf("New pad %s added to %s\n", newPad.getName(), source.getName());
 				Pad sink_pad = PlayerData.windowSink.getStaticPad("sink");
+				//Pad sink_pad = PlayerData.pipe.getElementByName("xsink").getStaticPad("sink");
 				if(sink_pad.isLinked())
 					System.out.println("Pad already linked");
-				PadLinkReturn ret = newPad.link(sink_pad);
-				if(ret == null)
-					System.out.println("Pad link failed");				
+				else
+				{
+					PadLinkReturn ret = newPad.link(sink_pad);
+					if(ret == null)
+						System.out.println("Pad link failed");
+				}
 			}
 		});
 		
 		PlayerData.elems.add(source);
-		PlayerData.elems.add(colorspace);
+		PlayerData.elems.add(tee);
+		PlayerData.elems.add(playerQueue);
+		PlayerData.elems.add(monitorQueue);
 		PlayerData.elems.add(decoder);
 		
-		PlayerData.pipe.addMany(source, colorspace, decoder, PlayerData.windowSink);
-		//Element.linkPadsFiltered(source, "src", colorspace, "sink", colorspaceCaps);
-		//Element.linkMany(colorspace, decoder, windowSink);
-		Element.linkMany(source, decoder, PlayerData.windowSink);
+		////////////////////////////////////////seperate bins code//////////////////////////////////////////////
+		/*
+		PlayerData.playerBin = new Bin("player-bin");
+		PlayerData.appSinkBin = new Bin("appsink-bin");
+		
+		PlayerData.appSinkBin.addMany(source, tee, monitorQueue, appSink);
+		Element.linkMany(source, tee);
+		Element.linkMany(monitorQueue, appSink);
+		
+		Pad teeMonitorSrc = tee.getRequestPad("src%d");
+		Pad queueMonitorSink = monitorQueue.getStaticPad("sink");
+		teeMonitorSrc.link(queueMonitorSink);
+		
+		PlayerData.playerBin.addMany(playerQueue, decoder, sink);
+		
+		
+		PlayerData.pipe.add(PlayerData.appSinkBin);
+		*/
+		///////////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		PlayerData.pipe.addMany(source, tee, monitorQueue, playerQueue, decoder, PlayerData.appSink, PlayerData.windowSink);
+		
+		if(!Element.linkMany(source, tee))
+			System.out.println("Failed: source -> tee");
+		if(!Element.linkMany(playerQueue, decoder))
+			System.out.println("Failed: player-queue -> decoder");
+		if(!Element.linkMany(monitorQueue, PlayerData.appSink))
+			System.out.println("Failed: monitor-queue -> appsink");
+		
+		Pad teePlayerSrc = tee.getRequestPad("src%d");
+		Pad teeMonitorSrc = tee.getRequestPad("src%d");
+		Pad queuePlayerSink = playerQueue.getStaticPad("sink");
+		Pad queueMonitorSink = monitorQueue.getStaticPad("sink");
+		
+		PadLinkReturn ret = teePlayerSrc.link(queuePlayerSink);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.out.println("Failed: tee -> player-queue");
+		ret = teeMonitorSrc.link(queueMonitorSink);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.out.println("Failed: tee -> monitor-queue");
+		
 		//gray out undesired buttons
 		if(PlayerData.controlButtons.size() != 0)
 		{
@@ -131,9 +185,37 @@ public class PipelineManager{
 			PlayerData.controlButtons.get(4).setEnabled(true);
 		}
 
-		SeekEvent seekEvent = new SeekEvent(2, Format.TIME, 0, SeekType.CUR, 0, SeekType.CUR, 100);
-		System.out.println(seekEvent.getRate());
+		//SeekEvent seekEvent = new SeekEvent(2, Format.TIME, 0, SeekType.CUR, 0, SeekType.CUR, 100);
+		//System.out.println(seekEvent.getRate());
 		
+		//try to subscribe to the have data signal of the pad
+		/*
+		newPad.connect(new Pad.HAVE_DATA(){
+			public void haveData(Pad pad, MiniObject data) {
+				
+				Buffer buffer = (Buffer) data;
+				ByteBuffer bBuffer = buffer.getByteBuffer();
+				//if(bBuffer != null)
+					System.out.printf("Decoder buffer of size: %s \n", buffer.getSize());
+			}
+		});
+				
+		//try to attach a probe to the pad
+		
+		newPad.addEventProbe(new Pad.EVENT_PROBE(){
+			public boolean eventReceived(Pad pad, Event event) {
+				Structure eventStruct = event.getStructure();
+				String eventName = eventStruct.getName();
+				//System.out.println(eventName);
+				if(eventName.equals("GstEventNewsegment"))
+				{
+					System.out.printf("Event: %s from Pad: %s \n", eventStruct, pad.getName());
+					//System.out.printf("Current position: %s\n", eventStruct.getValue("position"));
+				}
+				return false;
+			}
+		});
+		*/
 	}
 	
 	
@@ -150,10 +232,28 @@ public class PipelineManager{
 		
 		Element source = ElementFactory.make("v4l2src", "source");
 		Element tee = ElementFactory.make("tee", "tee");
+		Element encTee = ElementFactory.make("tee", "enc-tee");
 		Element streamQueue = ElementFactory.make("queue", "stream-queue");
 		Element recorderQueue = ElementFactory.make("queue", "recorder-queue");
+		Element recorderQueue2 = ElementFactory.make("queue", "recorder-queue-2");
+		Element monitorQueue = ElementFactory.make("queue", "monitor-queue");
+		PlayerData.appSink = (AppSink) ElementFactory.make("appsink", "app-sink");
+		
+		PlayerData.appSink.set("emit-signals", true);
+		PlayerData.appSink.connect(new AppSink.NEW_BUFFER() {
+			public void newBuffer(AppSink appSink) {
+				//take timestamp between new buffers, and record that as the time to decompress
+				long time = System.nanoTime();
+				String compressionTime = "Compression time(ns): " + (time - PlayerData.timeStamp) + "\n";
+				PlayerData.monitor.append(compressionTime);
+				PlayerData.timeStamp = time;
+				Buffer buffer = appSink.pullBuffer();
+				System.out.printf("Size: %s Offset: %s\n", buffer.getSize(), buffer.getOffset());
+			}
+		});
+		
 		Caps encCaps = new Caps();
-		encCaps = Caps.fromString("video/x-raw-yuv, " + PlayerData.resolution + PlayerData.frameRate); // width=640, height=480, framerate=20/1");
+		encCaps = Caps.fromString("video/x-raw-yuv" + PlayerData.resolution );//+ PlayerData.frameRate width=640, height=480, framerate=20/1");
 		Element colorspace = ElementFactory.make("ffmpegcolorspace", "colorspace");
 		Element encoder = ElementFactory.make("jpegenc", "encoder");;
 		switch(PlayerData.vidEnc)
@@ -175,15 +275,17 @@ public class PipelineManager{
 		
 		PlayerData.elems.add(source);
 		PlayerData.elems.add(tee);
+		PlayerData.elems.add(encTee);
 		PlayerData.elems.add(streamQueue);
 		PlayerData.elems.add(recorderQueue);
+		PlayerData.elems.add(monitorQueue);
 		PlayerData.elems.add(colorspace);
 		PlayerData.elems.add(encoder);
 		PlayerData.elems.add(mux);
 		PlayerData.elems.add(sink);
 		
-		PlayerData.pipe.addMany(source, tee, streamQueue, recorderQueue, colorspace, encoder, mux, sink, PlayerData.windowSink);
-		
+		PlayerData.pipe.addMany(source, tee, streamQueue, PlayerData.windowSink, recorderQueue, colorspace, encoder, encTee, recorderQueue2, mux, sink, monitorQueue, PlayerData.appSink);
+		/*
 		if(!Element.linkMany(source, tee))
 			System.out.println("Failed: webcam -> tee");
 		if(!Element.linkPadsFiltered(recorderQueue, "src", colorspace, "sink", encCaps))
@@ -192,6 +294,20 @@ public class PipelineManager{
 			System.out.println("Failed: colorspace -> encoder -> file sink");
 		if(!Element.linkMany(streamQueue, PlayerData.windowSink))
 			System.out.println("Failed: stream queue -> widget");
+		*/
+		if(!Element.linkMany(source, tee))
+			System.out.println("Failed: webcam -> tee");
+		if(!Element.linkMany(streamQueue, PlayerData.windowSink))
+			System.out.println("Failed: stream queue -> video sink");
+		if(!Element.linkPadsFiltered(recorderQueue, "src", colorspace, "sink", encCaps))
+			System.out.println("Failed: recorder queue -> colorspace");
+		if(!Element.linkMany(colorspace, encoder, encTee))
+			System.out.println("Failed: colorspace -> encoder -> encTee");
+		if(!Element.linkMany(recorderQueue2, mux, sink))
+			System.out.println("Failed: recorder queue 2 -> mux -> sink");
+		if(!Element.linkMany(monitorQueue, PlayerData.appSink))
+			System.out.println("Failed: monitor queue -> app sink");
+		
 		
 		//create two new src pads with and link them with queue pads
 		Pad teeStreamSrc = tee.getRequestPad("src%d");
@@ -201,6 +317,14 @@ public class PipelineManager{
 		
 		teeStreamSrc.link(queueStreamSink);
 		teeRecorderSrc.link(queueRecorderSink);
+		
+		Pad encTeeRecorderSrc = encTee.getRequestPad("src%d");
+		Pad encTeeMonitorSrc = encTee.getRequestPad("src%d");
+		Pad queueRecorder2Sink = recorderQueue2.getStaticPad("sink");
+		Pad queueMonitorSink = monitorQueue.getStaticPad("sink");
+		
+		encTeeRecorderSrc.link(queueRecorder2Sink);
+		encTeeMonitorSrc.link(queueMonitorSink);
 		
 		if(PlayerData.controlButtons.size() != 0 )
 		{
@@ -267,6 +391,27 @@ public class PipelineManager{
 	 */
 	protected static void connect_to_signals()
 	{
+		/*
+		//connect to signal MESSAGE
+		PlayerData.pipe.getBus().connect(new Bus.MESSAGE() {
+			public void busMessage(Bus bus, Message msg) {
+				String messageName = msg.getStructure().getName();
+				if(messageName.equals("Pause STAte"))
+				{
+					System.out.println("Thread: " + Thread.currentThread().getId());
+					System.out.println("Main thread pausing");
+					PlayerData.pipe.pause();
+				}
+				if(messageName.equals("Play STAte"))
+				{
+					System.out.println("Thread: " + Thread.currentThread().getId());
+					System.out.println("Main thread playing");
+					PlayerData.pipe.play();
+				}
+			}
+		});
+		*/
+		
 		//connect to signal TAG
 		PlayerData.pipe.getBus().connect(new Bus.TAG() {
 			public void tagsFound(GstObject source, TagList tagList) {
@@ -292,7 +437,6 @@ public class PipelineManager{
 		
 		//connect to signal ERROR
 		PlayerData.pipe.getBus().connect(new Bus.ERROR() {
-			
 			@Override
 			public void errorMessage(GstObject source, int code, String message) {
 				//print error from message
@@ -303,11 +447,17 @@ public class PipelineManager{
 		
 		//connect to change of state
 		PlayerData.pipe.getBus().connect(new Bus.STATE_CHANGED() {
-			@Override
 			public void stateChanged(GstObject source, State oldstate, State newstate, State pending) {
 				if(source.equals(PlayerData.pipe))
 				{
 					System.out.printf("[%s] changed state from %s to %s\n", source.getName(), oldstate.toString(), newstate.toString());
+				}
+				else if(source.equals(PlayerData.appSink))
+				{
+					if(newstate.equals(State.PLAYING))
+						PlayerData.pipe.setState(State.PLAYING);
+					else if(newstate.equals(State.PAUSED))
+						PlayerData.pipe.setState(State.PAUSED);
 				}
 			}
 		});
@@ -315,8 +465,21 @@ public class PipelineManager{
 		//connect to buffering signal for monitor data
 		PlayerData.pipe.getBus().connect(new Bus.BUFFERING() {
 			public void bufferingData(GstObject source, int percentage) {
+				System.out.println("BUFFERING DATA");
 				System.out.println("Source " + source.getName() + ": " + percentage);
 			}
 		});
 	}
+	
+	/**
+	 * Author: Zain
+	 * Purpose: We will attach data probes on elements such as decodebin2 to inform us when data is available to the pad. We will do this to
+	 * 			time how long the data takes to pass through the element for monitoring purposes
+	 * Parameters:
+	 * Return:
+	 */
+	//protected static PadProbeReturn detectedStream(Pad pad, PadProbeInfo info)
+	//{
+		
+	//}
 }

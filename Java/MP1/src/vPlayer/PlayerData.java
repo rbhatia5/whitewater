@@ -9,8 +9,10 @@ import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
 
+import org.gstreamer.Bin;
 import org.gstreamer.Element;
 import org.gstreamer.Pipeline;
+import org.gstreamer.elements.AppSink;
 import org.gstreamer.swing.VideoComponent;
 
 public class PlayerData {
@@ -31,6 +33,9 @@ public class PlayerData {
 	}
 	
 	protected static Pipeline pipe;
+	protected static Bin playerBin;
+	protected static Bin appSinkBin;
+	protected static AppSink appSink;
 	protected static List<Element> elems = new ArrayList<Element>();
 	protected static Element windowSink;
 	protected static JFrame frame;

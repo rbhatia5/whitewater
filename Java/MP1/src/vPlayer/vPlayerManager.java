@@ -3,6 +3,8 @@ package vPlayer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+
 import javax.swing.*;
 
 import org.gstreamer.*;
@@ -12,7 +14,6 @@ public class vPlayerManager {
 	
 	public static void main(String[] args)
 	{
-		
 		//initialize GStreamer
 		args = Gst.init("Simple Pipeline", args);
 		
@@ -24,22 +25,18 @@ public class vPlayerManager {
 		PlayerData.frameRate = ",framerate=10/1";
 		PlayerData.file = "Cranes.mpg";
 		PlayerData.seek = false;
-		PlayerData.timeStamp = 0;
 		
 		//initialize static window reference
 		PlayerData.vid_comp = new VideoComponent();
 		PlayerData.windowSink = PlayerData.vid_comp.getElement();
 		
-		//construct pipeline
 		PipelineManager.modify_pipeline();
-		
-		//subscribe to messages
-		PipelineManager.connect_to_signals();
 		
 		SwingUtilities.invokeLater(new Runnable() 
 		{ 
 			public void run() 
 			{
+				PlayerData.pipe.setState(State.READY);
 				PlayerData.pipe.setState(State.PLAYING);
 	    		System.out.println(PlayerData.pipe.queryDuration(Format.TIME));
 	    		PlayerData.pipe.setState(State.PAUSED);
@@ -59,7 +56,7 @@ public class vPlayerManager {
 				PlayerData.vid_comp.setPreferredSize(new Dimension(640, 480)); 
 				PlayerData.frame.setSize(1080, 920);
 				PlayerData.frame.setVisible(true);
-	            
+				/*
 	            Timer timer = new Timer(1000, new ActionListener(){
 					public void actionPerformed(ActionEvent e) {
 						if(PlayerData.pipe.isPlaying() && !PlayerData.seek)
@@ -70,10 +67,12 @@ public class vPlayerManager {
 					}
 	            });	
 	            timer.start();
+	            */
 	        } 
 	    });
 		
-		PlayerData.pipe.setState(State.NULL);
-		
+		//PlayerData.pipe.setState(State.PLAYING);
+		//Gst.main();
+		//
 	}
 }

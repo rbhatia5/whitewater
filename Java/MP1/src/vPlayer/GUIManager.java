@@ -24,9 +24,20 @@ import javax.swing.LayoutStyle;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.gstreamer.Bus;
 import org.gstreamer.Format;
+import org.gstreamer.Message;
+import org.gstreamer.MessageType;
+import org.gstreamer.Pad;
 import org.gstreamer.SeekType;
 import org.gstreamer.State;
+import org.gstreamer.StateChangeReturn;
+import org.gstreamer.Structure;
+import org.gstreamer.event.FlushStartEvent;
+import org.gstreamer.event.FlushStopEvent;
+import org.gstreamer.lowlevel.*;
+
+import vPlayer.PlayerData.Mode;
 
 public class GUIManager {
 	
@@ -78,10 +89,12 @@ public class GUIManager {
 		playButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				PlayerData.pipe.setState(State.PLAYING);
+				//GstBusAPI.GSTBUS_API.gst_bus_post(PlayerData.pipe.getBus(), GstMessageAPI.GSTMESSAGE_API.gst_message_new_custom(MessageType.APPLICATION, PlayerData.pipe, GstStructureAPI.GSTSTRUCTURE_API.gst_structure_empty_new("Play STAte")));
+				PlayerData.timeStamp = System.nanoTime();
 				System.out.println("Setting state to playing");
+				PlayerData.appSink.setState(State.PLAYING);
 				PlayerData.rate = 1;
-				PlayerData.pipe.seek(PlayerData.rate, Format.TIME, 0, SeekType.NONE, PlayerData.position/1000000000, SeekType.NONE, PlayerData.duration/1000000000);
+				//PlayerData.pipe.seek(PlayerData.rate, Format.TIME, 0, SeekType.NONE, PlayerData.position/1000000000, SeekType.NONE, PlayerData.duration/1000000000);
 			}					
 		});
 		//pause button
@@ -89,8 +102,12 @@ public class GUIManager {
 		pauseButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
+				//GstBusAPI.GSTBUS_API.gst_bus_post(PlayerData.pipe.getBus(), GstMessageAPI.GSTMESSAGE_API.gst_message_new_custom(MessageType.APPLICATION, PlayerData.pipe, GstStructureAPI.GSTSTRUCTURE_API.gst_structure_empty_new("Pause STAte")));
 				System.out.println("Setting state to paused");
-				PlayerData.pipe.setState(State.PAUSED);
+				if(PlayerData.mode == Mode.VIDEO_RECORDER)
+					PlayerData.pipe.setState(State.PAUSED);
+				else
+					PlayerData.appSink.setState(State.PAUSED);
 			}					
 		});
 		//stop button
@@ -99,7 +116,14 @@ public class GUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to ready");
-				PlayerData.pipe.setState(State.READY);
+				//PlayerData.appSink.setState(State.READY);
+				if(PlayerData.mode == Mode.VIDEO_RECORDER)
+					PlayerData.pipe.setState(State.READY);
+				else
+				{
+					PlayerData.pipe.setState(State.READY);
+					PlayerData.pipe.setState(State.PAUSED);
+				}
 			}					
 		});
 		//record button
@@ -108,8 +132,10 @@ public class GUIManager {
 		recordButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
+				PlayerData.timeStamp = System.nanoTime();
 				System.out.println("Setting state to playing");
 				PlayerData.pipe.setState(State.PLAYING);
+				//PlayerData.appSink.setState(State.PLAYING);
 			}					
 		});
 		//file open button
@@ -155,8 +181,10 @@ public class GUIManager {
 			}
 		});
 		
+		
 		//we can only read duration and current position after we have set state to playing
-		PlayerData.duration = PlayerData.pipe.queryDuration(Format.TIME);
+		//PlayerData.duration = PlayerData.pipe.queryDuration(Format.TIME);
+		PlayerData.duration = 51;
 		System.out.println((int)(PlayerData.duration/1000000000));
 		PlayerData.slider = new JSlider(0,(int)(PlayerData.duration/1000000000),0);
 		PlayerData.slider.addChangeListener(new ChangeListener(){
@@ -419,7 +447,7 @@ public class GUIManager {
 		encLayout.setHorizontalGroup(
 				encLayout.createParallelGroup()
 					.addGroup(encLayout.createSequentialGroup()						
-					.addComponent(PlayerData.monitor)
+					.addComponent(scrollPane)
 					)
 					.addGroup(encLayout.createSequentialGroup()						
 					.addComponent(userOptions)
@@ -436,7 +464,7 @@ public class GUIManager {
 		encLayout.setVerticalGroup(
 				encLayout.createSequentialGroup()		
 					.addGroup(encLayout.createParallelGroup()						
-					.addComponent(PlayerData.monitor)
+					.addComponent(scrollPane)
 					)
 					.addGroup(encLayout.createParallelGroup()						
 					.addComponent(userOptions)
