@@ -11,6 +11,8 @@ import org.gstreamer.swing.*;
 import org.gstreamer.elements.*;
 import org.gstreamer.elements.good.RTPBin;
 
+import vClient.ClientData;
+
 //import vServer.*;
 
 public class vServerManager {
@@ -25,6 +27,20 @@ public class vServerManager {
 	{	
 		ServerData.mainThread = Thread.currentThread();
 		ServerData.state = ServerData.State.NEGOTIATING;
+		
+		File resources = new File("server-resources.txt");
+		try {
+			ServerData.resourcesReader = new BufferedReader(new FileReader(resources));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		/*
+		try {
+			ServerData.resourcesWriter = new BufferedWriter(new FileWriter(resources));
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+		*/
 		
 		initializeTCPServer();
 		

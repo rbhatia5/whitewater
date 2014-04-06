@@ -10,6 +10,8 @@ import java.net.Socket;
 import org.gstreamer.State;
 import org.gstreamer.StateChangeReturn;
 
+import vClient.ClientData;
+
 public class TCPServer implements Runnable{
 	
 	public void run() 
@@ -53,9 +55,30 @@ public class TCPServer implements Runnable{
 	
 	public static String negotiate()
 	{
-		String requestedFrameRate = ServerData.clientCommand;
-		String negotiatedFrameRate = "framerate=10";
-		return negotiatedFrameRate;
+		String resourcesFR = "";
+		String resourcesWidth = "";
+		String resourcesHeight = "";
+		try {
+			resourcesFR = ServerData.resourcesReader.readLine();
+			resourcesWidth = ServerData.resourcesReader.readLine();
+			resourcesHeight = ServerData.resourcesReader.readLine();
+			ServerData.resourcesReader.reset();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		String resources[] = ServerData.clientCommand.split(" ");
+		System.out.println(resources[0] + resources[1] + resources[2]);
+		
+		if(Integer.parseInt(resourcesFR) < Integer.parseInt(resources[0]))
+			resources[0] = resourcesFR;
+		if(Integer.parseInt(resourcesWidth) < Integer.parseInt(resources[1]))
+			resources[1] = resourcesWidth;
+		if(Integer.parseInt(resourcesHeight) < Integer.parseInt(resources[2].replace("\n", "")))
+			resources[2] = resourcesHeight;
+		
+		String negotiatedResources = resources[0] + " " + resources[1] + " " + resources[2];
+		return negotiatedResources;
 	}
 	
 	public static void adaptPipeline()

@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
@@ -38,8 +39,10 @@ import org.gstreamer.event.FlushStopEvent;
 import org.gstreamer.lowlevel.*;
 
 import vClient.ClientData.Mode;
+import vServer.ServerData;
 
 public class ClientGUIManager {
+	
 	
 	/**
 	 * Author:
@@ -49,9 +52,56 @@ public class ClientGUIManager {
 	 */
 	public static String adjustProperties()
 	{
-		String properties = "framerate=15";
+		
+		String resourcesFR = "";
+		String resourcesWidth = "";
+		String resourcesHeight = "";
+
+		try {
+			resourcesFR = ClientData.resourcesReader.readLine();
+			resourcesWidth = ClientData.resourcesReader.readLine();
+			resourcesHeight = ClientData.resourcesReader.readLine();
+			ClientData.resourcesReader.reset();
+		} catch (IOException e) {
+			System.err.println("Could not read from resources file");
+		}
+		if(Integer.parseInt(resourcesFR) < Integer.parseInt(ClientData.frameRate))
+			ClientData.frameRate = resourcesFR;
+		String resolution[] = ClientData.resolution.split("x");
+		if(Integer.parseInt(resourcesWidth) < Integer.parseInt(resolution[0]))
+			resolution[0] = resourcesWidth;
+		if(Integer.parseInt(resourcesFR) < Integer.parseInt(resolution[1]))
+			resolution[1] = resourcesHeight;
+		
+		ClientData.resolution = resolution[0] + "x" + resolution[1];
+		
+		String properties = ClientData.frameRate + " " + resolution[0] + " " + resolution[1];
 		return properties;
 	}
+	
+	
+	/**
+	 * Author:
+	 * Purpose:
+	 * Parameters:
+	 * Return:
+	 */
+	public static String negotiateProperties(String properties)
+	{		
+		ClientGUIManager.sendServerMessage(properties);
+		while(!ClientData.mainThread.interrupted());
+		
+		if(!ClientData.serverResponse.equals(properties))
+		{
+			System.out.println("Negotiation Failed: Server cannot facilitate request. Modify properties to " + ClientData.serverResponse);
+		}
+		else
+		{
+			System.out.println("Negotiation Successful: Setting properties to " + ClientData.serverResponse);
+		}
+		return ClientData.serverResponse;
+	}
+	
 	
 	/**
 	 * Author:
@@ -75,11 +125,21 @@ public class ClientGUIManager {
 	 */
 	protected static JPanel createControlPanel()
 	{
+		JButton negotiateButton = new JButton("Negotiate");
+		negotiateButton.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e) {
+				System.out.println("Negotiating with Server");
+				String properties = ClientGUIManager.adjustProperties();
+				properties = negotiateProperties(properties);
+				ClientPipelineManager.modify_pipeline();
+			}					
+		});
+		
 		JButton playButton = new JButton("Play");
 		playButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				ClientData.timeStamp = System.nanoTime();
 				System.out.println("Setting state to playing");
 				ClientData.pipe.setState(State.PLAYING);
 				//ClientData.appSink.setState(State.PLAYING);
@@ -178,6 +238,7 @@ public class ClientGUIManager {
 				});
 		
 		JPanel controls = new JPanel();
+		controls.add(negotiateButton);
 		controls.add(playButton);
 		controls.add(pauseButton);
 		controls.add(stopButton);
@@ -186,6 +247,7 @@ public class ClientGUIManager {
 		controls.add(ClientData.slider);
 		
 		//add buttons to list
+		ClientData.controlButtons.add(negotiateButton);
 		ClientData.controlButtons.add(playButton);
 		ClientData.controlButtons.add(pauseButton);
 		ClientData.controlButtons.add(stopButton);
@@ -207,6 +269,7 @@ public class ClientGUIManager {
 						.addComponent(stopButton)
 						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED,
 				         GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+				        .addComponent(negotiateButton)
 					.addComponent(ClientData.slider)
 					)
 		);				
@@ -218,6 +281,7 @@ public class ClientGUIManager {
 					    .addComponent(pauseButton)
 					    .addComponent(fastForwardButton)
 					    .addComponent(stopButton)
+					    .addComponent(negotiateButton)
 				    .addComponent(ClientData.slider)
 					)
 		);
@@ -247,13 +311,13 @@ public class ClientGUIManager {
 				JComboBox source = (JComboBox)e.getSource();
 				String selected = (String)source.getSelectedItem();
 				if(selected.equals("320x240"))
-					ClientData.resolution = ",width=320, height=240 ";
+					ClientData.resolution = "320x240";
 				else if(selected.equals("640x480"))
-					ClientData.resolution = ",width=640, height=480 ";
+					ClientData.resolution = "640x480";
 				else if(selected.equals("960x720"))
-					ClientData.resolution = ",width=960, height=720 ";
+					ClientData.resolution = "960x720";
 				else if(selected.equals("1280x1080"))
-					ClientData.resolution = ",width=1280, height=1080 ";
+					ClientData.resolution = "1280x1080";
 			}
 		});
 		//resolution list picker
@@ -266,13 +330,13 @@ public class ClientGUIManager {
 				JComboBox source = (JComboBox)e.getSource();
 				String selected = (String)source.getSelectedItem();
 				if(selected.equals("10"))
-					ClientData.frameRate = ",framerate=10/1 ";
+					ClientData.frameRate = "10";
 				else if(selected.equals("15"))
-					ClientData.frameRate = ",framerate=15/1 ";
+					ClientData.frameRate = "15";
 				else if(selected.equals("20"))
-					ClientData.frameRate = ",framerate=20/1 ";
+					ClientData.frameRate = "20";
 				else if(selected.equals("30"))
-					ClientData.frameRate = ",framerate=30/1 ";
+					ClientData.frameRate = "30";
 			}
 		});
 		

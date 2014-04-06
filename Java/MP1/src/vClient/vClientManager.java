@@ -13,52 +13,40 @@ import org.gstreamer.elements.good.RTPBin;
 
 public class vClientManager {
 	
-	public static String negotiateProperties(String properties)
-	{		
-		ClientGUIManager.sendServerMessage(properties);
-		while(!ClientData.mainThread.interrupted());
-		
-		if(!ClientData.serverResponse.equals(properties))
-		{
-			System.out.println("Negotiation Failed: Server cannot facilitate request. Modify properties to " + ClientData.serverResponse);
-		}
-		else
-		{
-			System.out.println("Negotiation Successful: Setting properties to " + ClientData.serverResponse);
-		}
-		return ClientData.serverResponse;
-	}
-	
 	public static void main(String[] args)
 	{
-		ClientData.mainThread = Thread.currentThread();
 		ClientData.state = ClientData.State.NEGOTIATING;
 		
-		String properties = ClientGUIManager.adjustProperties();
-		
-		properties = negotiateProperties(properties);
-		
-		//ClientGUIManager.sendServerMessage("play");
-			
+		File resources = new File("client-resources.txt");
+		try {
+			ClientData.resourcesReader = new BufferedReader(new FileReader(resources));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} 
+		/*
+		try {
+			ClientData.resourcesWriter = new BufferedWriter(new FileWriter(resources));
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+		*/
 		args = Gst.init("Client Pipeline", args);
 		
 		ClientData.mode = ClientData.Mode.CLIENT;
 		
 		ClientData.resolution = ",width=640, height=480";
 		ClientData.frameRate = ",framerate=10/1";
-		ClientData.file = "Cranes.mpg";
 		ClientData.seek = false;
 		
 		//initialize static window reference
 		ClientData.vid_comp = new VideoComponent();
 		ClientData.windowSink = ClientData.vid_comp.getElement();
-		
-		ClientPipelineManager.modify_pipeline();
-		
+			
 		SwingUtilities.invokeLater(new Runnable() 
 		{ 
 			public void run() 
 			{	    		
+				ClientData.mainThread = Thread.currentThread();
 				//create the control panel
 				ClientData.controls = ClientGUIManager.createControlPanel();
 				
@@ -76,9 +64,5 @@ public class vClientManager {
 				ClientData.frame.setVisible(true);
 	        } 
 	    });
-		
-		//pipe.setState(State.PLAYING);
-		//Gst.main();
-		//while(true);
 	}
 }
