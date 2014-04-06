@@ -3,72 +3,41 @@ package vClient;
 import java.io.*;
 import java.net.*;
 
-public class TCPClient implements Runnable {
+import org.gstreamer.State;
 
-	Socket socket = null;
-	BufferedReader readFromClient = null;
-	BufferedReader readFromServer = null;
-	PrintWriter writeToServer = null;
-	String message = null;
+public class TCPClient implements Runnable{
 
-	public TCPClient(Socket socket) {
-		try {
-			this.socket = socket;
-			readFromServer = new BufferedReader(
-					new InputStreamReader(
-							socket.getInputStream()));
-			writeToServer = new PrintWriter(
-					socket.getOutputStream(), true);
-			readFromClient = new BufferedReader(
-					new InputStreamReader(System.in));
-
-			new Thread(this).start();
-
-//			while(true) {
-//				message = readFromClient.readLine();
-//				writeToServer.println(message);
-//				writeToServer.flush();
-//				if(message.equalsIgnoreCase("exit")) {
-//					System.exit(0);
-//				}
-//			}
-		} catch(IOException exp) {
-			exp.printStackTrace();
-		}
-	}
-
-
-	public void run() {
-//		try {
-//			while(true) {
-//				message = readFromServer.readLine();
-//			}
-//		} catch(Exception exp) {
-//			exp.printStackTrace();
-//		}
-	}
+	private String message;
 	
-	public void push(String msg) {
-		writeToServer.println(msg);
-		writeToServer.flush();
-		
-	}
-	
-	public String waitForResponse()
+	TCPClient(String message)
 	{
-		while(message == null) {
-			try {
-				message = readFromServer.readLine();
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		this.message = message;
+	}
+	
+	public void run()
+	{
+		try
+		{
+			System.out.println("CLIENT: Initializing socket port 5000");
+			Socket socket = new Socket("localhost", 5000);
+			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			DataOutputStream outToServer = new DataOutputStream(socket.getOutputStream());
+			System.out.println("CLIENT: Writing to socket");
+			outToServer.writeBytes(message + "\n");
+			System.out.println("CLIENT: Reading from socket");
+			String serverString = inFromServer.readLine();
+			ClientData.serverResponse = serverString;
+			System.out.printf("Server sent: %s\n", serverString);
+			socket.close();
+			if(ClientData.state.equals(ClientData.State.NEGOTIATING))
+			{
+				ClientData.state = ClientData.State.STREAMING;
+				ClientData.mainThread.interrupt();
 			}
 		}
-		System.out.println(message);
-		String resp = new String(message); 
-		message = null;
-		return resp;
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 }
-

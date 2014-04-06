@@ -1,83 +1,74 @@
 package vServer;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
 
+import org.gstreamer.State;
+import org.gstreamer.StateChangeReturn;
 
 public class TCPServer implements Runnable{
-
-	ServerSocket serverSocket = null;
-	Socket socket = null;
-	BufferedReader readFromClient = null;
-	BufferedReader readFromServer = null;
-	PrintWriter writeToClient = null;
-	String message = null;
-
-	public TCPServer() {
-		try {
-			serverSocket = new ServerSocket(5002);
-			System.out.println("Waiting for connection...");
-			socket = serverSocket.accept();
-			System.out.println("Connection accepted...");
-
-			readFromClient = new BufferedReader(
-					new InputStreamReader(
-							socket.getInputStream()));
-			writeToClient = new PrintWriter(
-					socket.getOutputStream(), true);
-			readFromServer = new BufferedReader(
-					new InputStreamReader(
-							System.in));
-
-			new Thread(this).start();
-
-//			while(true) {
-//				message = readFromServer.readLine();
-//				writeToClient.println(message);
-//				writeToClient.flush();
-//				if(message.equalsIgnoreCase("exit")) {
-//					System.exit(0);
-//				}
-//			}
-
-		} catch(IOException exp) {
-			exp.printStackTrace();
-		}
-	}
-
-	public void run() {
-//		try {
-//			while(true) {
-//				message = readFromClient.readLine();
-//				
-//			}
-//		} catch(Exception exp) {
-//			exp.printStackTrace();
-//		}
-	}
 	
-	public void push(String msg) {
-		writeToClient.println(msg);
-		System.out.println(msg);
-		writeToClient.flush();
-		
-	}
-	
-	public String waitForResponse()
+	public void run() 
 	{
-		while(message == null) {
-			try {
-				message = readFromClient.readLine();
-				
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		String clientString;
+		String serverString;
+		ServerSocket socket = null;
+		
+		try {
+			System.out.println("SERVER: Initializing server socket");
+			socket = new ServerSocket(5000);
+			System.out.printf("SERVER: Server socket initialized %s\n", socket.toString());
+			while(true)
+			{
+				System.out.println("SERVER: Connecting to socket port 5000");
+				Socket connectionSocket = socket.accept();
+				System.out.printf("SERVER: Connected to socket %s\n", connectionSocket.toString());
+				BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+				DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+				System.out.println("SERVER: Reading from socket");
+				clientString = inFromClient.readLine() + "\n";
+				ServerData.clientCommand = clientString;
+				if(ServerData.state.equals(ServerData.State.NEGOTIATING))
+				{
+					serverString = negotiate();
+					ServerData.state = ServerData.State.STREAMING;
+					outToClient.writeBytes(serverString + "\n");
+					ServerData.mainThread.interrupt();
+				}
+				else if(ServerData.state.equals(ServerData.State.STREAMING))
+				{
+					adaptPipeline();
+					serverString = "State change successful";
+					outToClient.writeBytes(serverString + "\n");
+				}
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		System.out.println(message);
-		String resp = new String(message);
-		message = null;
-		return resp;
+	}	
+	
+	public static String negotiate()
+	{
+		String requestedFrameRate = ServerData.clientCommand;
+		String negotiatedFrameRate = "framerate=10";
+		return negotiatedFrameRate;
+	}
+	
+	public static void adaptPipeline()
+	{
+		if(ServerData.clientCommand.contains("play"))
+		{
+			StateChangeReturn ret = ServerData.pipe.setState(State.PLAYING);
+			System.out.println(ret.toString());
+		}
+		else if(ServerData.clientCommand.contains("pause"))
+		{
+			StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
+			System.out.println(ret.toString());
+		}
 	}
 }

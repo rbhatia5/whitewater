@@ -1,4 +1,4 @@
-package vPlayer;
+package vClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,39 +9,30 @@ import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
 
-import org.gstreamer.Bin;
 import org.gstreamer.Element;
 import org.gstreamer.Pipeline;
 import org.gstreamer.elements.AppSink;
 import org.gstreamer.swing.VideoComponent;
 
-public class PlayerData {
+public class ClientData {
 
 	public enum Mode
 	{
-		PLAYER, VIDEO_RECORDER, AUDIO_RECORDER, SERVER, CLIENT
+		CLIENT
 	}
 	
-	public enum VideoEncoding
-	{
-		MJPEG, MPEG4
+	public enum State {
+		NEGOTIATING, STREAMING
 	}
 	
-	public enum AudioEncoding
-	{
-		ALAW, MULAW, MKV
-	}
-	
+	protected static Thread mainThread;
+	protected static State state;
+	protected static String serverResponse;
 	protected static Pipeline pipe;
-	protected static Bin playerBin;
-	protected static Bin appSinkBin;
-	protected static AppSink appSink;
-	protected static List<Element> elems = new ArrayList<Element>();
+	protected static AppSink RTCPSink;
 	protected static Element windowSink;
 	protected static JFrame frame;
 	protected static Mode mode;
-	protected static VideoEncoding vidEnc;
-	protected static AudioEncoding audEnc;
 	protected static VideoComponent vid_comp;
 	protected static String frameRate;
 	protected static String resolution;
@@ -54,8 +45,6 @@ public class PlayerData {
 	protected static int rate;
 	protected static long duration;
 	protected static long position;
-	//protected static ProbeHandler probeHandler;
 	protected static long timeStamp;
 	protected static long encDecTime;
-	
 }

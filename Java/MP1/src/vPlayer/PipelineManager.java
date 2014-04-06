@@ -77,6 +77,45 @@ public class PipelineManager{
 		}
 	}
 	
+	/**
+	 * Author:
+	 * Purpose:
+	 * Parameters:
+	 * Return:
+	 */
+	protected static void server_pipeline()
+	{
+		PlayerData.pipe = new Pipeline("server-pipeline");
+		
+		/*
+		___________	   ______________    ______________    _____________    ___________
+		| v4l2src |	-> | ffenc_h263 | -> | rtph263pay | -> | gstrtpbin | -> | udpsink | 
+		___________    ______________    ______________    _____________    ___________
+		*/
+		
+		Element source = ElementFactory.make("v4l2src", "webcam");
+		Element encoder = ElementFactory.make("ffenc_h263", "encoder");
+		Element pay = ElementFactory.make("rtph263pay", "pay");
+		Element rtpBin = ElementFactory.make("gstrtpbin", "rtp-bin"); 
+		Element udpSink = ElementFactory.make("udpsink", "udpsink");
+		
+		PlayerData.pipe.addMany(source, encoder, pay, rtpBin, udpSink);
+		
+		Element.linkMany(source, encoder, pay);
+		
+		udpSink.set("host", "127.0.0.1");
+		udpSink.set("port", "5001");
+		
+		Pad send_rtp_sink_0 = rtpBin.getRequestPad("send_rtp_sink_0");
+		Pad paySrcPad = pay.getStaticPad("src%d");
+		paySrcPad.link(send_rtp_sink_0);
+		
+		Pad send_rtp_src_0 = rtpBin.getRequestPad("send_rtp_src_0");
+		Pad udpSinkPad = udpSink.getStaticPad("sink");
+		send_rtp_src_0.link(udpSinkPad);
+		
+	}
+	
 	
 	
 	/**
