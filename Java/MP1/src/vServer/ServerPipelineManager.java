@@ -8,8 +8,14 @@ import org.gstreamer.GstObject;
 import org.gstreamer.Pad;
 import org.gstreamer.Pipeline;
 import org.gstreamer.State;
+import org.gstreamer.Structure;
 import org.gstreamer.TagList;
 import org.gstreamer.elements.good.RTPBin;
+import org.gstreamer.lowlevel.GObjectAPI;
+import org.gstreamer.lowlevel.GType;
+import org.gstreamer.lowlevel.GstTypes;
+
+import com.sun.jna.Pointer;
 
 import vServer.ServerData;
 
@@ -28,7 +34,7 @@ public class ServerPipelineManager {
 		case SERVER:
 			System.out.println("Initializing Server");
 			discard_pipeline();
-			client_pipeline();
+			server_pipeline();
 			connect_to_signals();
 			ServerData.pipe.setState(State.READY);
 			break;
@@ -65,7 +71,7 @@ public class ServerPipelineManager {
 	 * Parameters:
 	 * Return:
 	 */
-	protected static void client_pipeline()
+	protected static void server_pipeline()
 	{
 	
 		ServerData.pipe = new Pipeline("server-pipeline");
@@ -78,24 +84,28 @@ public class ServerPipelineManager {
 																|			____________________    ________________
 																|___\		| .send_rtcp_src_0 | -> | udpsink 5002 |
 																|	/		____________________    ________________
-																|			_______________    _____________________
-																|___\		| udpsrc 5003 | -> | .recv_rtcp_sink_0 |
-																	/		_______________    _____________________																	
+																|			_______________    _______    _________    _____________________
+																|___\		| udpsrc 5003 | -> | tee | -> | queue | -> | .recv_rtcp_sink_0 |
+																	/		_______________    _______    _________    _____________________
+																	 				              |       _________    ___________
+																	 				              |___\   | queue | -> | appsink |
+																	 				                  /   _________    ___________
 		*/
 		
 		//Initialize elements
 		Element source = ElementFactory.make("videotestsrc", "webcam");
 		Element encoder = ElementFactory.make("ffenc_h263", "encoder");
 		Element pay = ElementFactory.make("rtph263pay", "pay");
-		RTPBin rtpBin = (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin"); 
+		ServerData.rtpBin = (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin"); 
 		Element udpRTPSink = ElementFactory.make("udpsink", "udp-rtp-sink");
 		Element udpRTCPSrc = ElementFactory.make("udpsrc", "udp-rtcp-src");
 		Element udpRTCPSink = ElementFactory.make("udpsink", "udp-rtcp-sink");
+		
 		//Error check
-		if(source == null || encoder == null || pay == null || rtpBin == null || udpRTPSink == null || udpRTCPSrc == null || udpRTCPSink == null)
+		if(source == null || encoder == null || pay == null || ServerData.rtpBin == null || udpRTPSink == null || udpRTCPSrc == null || udpRTCPSink == null)
 			System.err.println("Could not create all elements");
 		
-		ServerData.pipe.addMany(source, encoder, pay, rtpBin, udpRTPSink, udpRTCPSrc, udpRTCPSink);
+		ServerData.pipe.addMany(source, encoder, pay, ServerData.rtpBin, udpRTPSink, udpRTCPSrc, udpRTCPSink);
 		
 		//Link link-able elements
 		Element.linkMany(source, encoder, pay);
@@ -110,7 +120,7 @@ public class ServerPipelineManager {
 		udpRTCPSink.set("port", "5002");
 		
 		//Link sometimes pads manually
-		rtpBin.connect(new Element.PAD_ADDED() {
+		ServerData.rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
 				//System.out.printf("New pad %s added to %s\n", newPad.getName(), source.getName());
 				if(newPad.getName().contains("send_rtp_src"))
@@ -122,21 +132,26 @@ public class ServerPipelineManager {
 		});
 		
 		//Link request pads manually
-		Pad send_rtp_sink_0 = rtpBin.getRequestPad("send_rtp_sink_0");
+		Pad send_rtp_sink_0 = ServerData.rtpBin.getRequestPad("send_rtp_sink_0");
 		Pad paySrcPad = pay.getStaticPad("src");
 		if(send_rtp_sink_0 == null || paySrcPad == null)
 			System.err.println("Could not create rtpbin.send_rtp_sink_0 or pay.src pad");
 		paySrcPad.link(send_rtp_sink_0);
 		
-		Pad send_rtcp_src_0 = rtpBin.getRequestPad("send_rtcp_src_0");
+		Pad send_rtcp_src_0 = ServerData.rtpBin.getRequestPad("send_rtcp_src_0");
 		Pad udpSinkPadRTCP = udpRTCPSink.getStaticPad("sink");
 		if(send_rtcp_src_0 == null || udpSinkPadRTCP == null)
 			System.err.println("Could not create rtpbin.send_rtcp_src_0 or udp.src pad");
 		send_rtcp_src_0.link(udpSinkPadRTCP);
 		
-		Pad recv_rtcp_sink_0 = rtpBin.getRequestPad("recv_rtcp_sink_0");
+		Pad recv_rtcp_sink_0 = ServerData.rtpBin.getRequestPad("recv_rtcp_sink_0");
 		Pad udpSrcPadRTCP = udpRTCPSrc.getStaticPad("src");
 		udpSrcPadRTCP.link(recv_rtcp_sink_0);
+		
+		Element rtpSession = ServerData.rtpBin.getElementByName("rtpsession0");
+		//Pointer p = GObjectAPI.GOBJECT_API.g_type_create_instance(GType.POINTER);
+		//System.out.println();
+		//ServerData.rtpBin.e
 	}
 	
 		
@@ -171,6 +186,24 @@ public class ServerPipelineManager {
 				{
 					System.out.printf("[%s] changed state from %s to %s\n", source.getName(), oldstate.toString(), newstate.toString());
 				}
+			}
+		});
+		
+		ServerData.rtpBin.connect(new RTPBin.ON_NEW_SSRC() {
+			public void onNewSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
+				System.out.printf("1 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+			}
+		});
+		
+		ServerData.rtpBin.connect(new RTPBin.ON_SSRC_SDES() {
+			public void onSsrcSdes(RTPBin rtpBin, int sessionid, int ssrc) {
+				System.out.printf("2 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+			}
+		});
+		
+		ServerData.rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
+			public void onSsrcActive(RTPBin rtpBin, int sessionid, int ssrc) {
+				System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
 			}
 		});
 	}

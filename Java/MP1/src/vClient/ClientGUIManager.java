@@ -61,7 +61,7 @@ public class ClientGUIManager {
 			resourcesFR = ClientData.resourcesReader.readLine();
 			resourcesWidth = ClientData.resourcesReader.readLine();
 			resourcesHeight = ClientData.resourcesReader.readLine();
-			ClientData.resourcesReader.reset();
+			//ClientData.resourcesReader.reset();
 		} catch (IOException e) {
 			System.err.println("Could not read from resources file");
 		}

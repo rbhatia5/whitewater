@@ -62,7 +62,7 @@ public class TCPServer implements Runnable{
 			resourcesFR = ServerData.resourcesReader.readLine();
 			resourcesWidth = ServerData.resourcesReader.readLine();
 			resourcesHeight = ServerData.resourcesReader.readLine();
-			ServerData.resourcesReader.reset();
+			//ServerData.resourcesReader.reset();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -34,8 +34,8 @@ public class vClientManager {
 		
 		ClientData.mode = ClientData.Mode.CLIENT;
 		
-		ClientData.resolution = ",width=640, height=480";
-		ClientData.frameRate = ",framerate=10/1";
+		ClientData.resolution = "640x480";
+		ClientData.frameRate = "10";
 		ClientData.seek = false;
 		
 		//initialize static window reference

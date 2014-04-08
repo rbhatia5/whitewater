@@ -1,12 +1,18 @@
 package vClient;
 
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.IntBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.gstreamer.*;
 import org.gstreamer.elements.AppSink;
 import org.gstreamer.elements.good.RTPBin;
 import org.gstreamer.event.SeekEvent;
+import org.gstreamer.lowlevel.GObjectAPI;
+import org.gstreamer.lowlevel.GType;
+
+import com.sun.jna.Pointer;
 
 public class ClientPipelineManager{
 
@@ -73,27 +79,36 @@ public class ClientPipelineManager{
 								|			____________________    ________________
 								|___\		| .send_rtcp_src_0 | -> | udpsink 5003 |
 								|	/		____________________    ________________
-								|			_______________    _____________________
-								|___\		| udpsrc 5002 | -> | .recv_rtcp_sink_0 |
-									/		_______________    _____________________																	
+								|			_______________    _______    _________    _____________________
+								|___\		| udpsrc 5002 | -> | tee | -> | queue | -> | .recv_rtcp_sink_0 |
+									/		_______________    _______    _________    _____________________
+																  |       _________    ___________
+																  |___\   | queue | -> | appsink |
+																	  /   _________    ___________									
 		*/
 		//Initialize elements
 		Element udpSrc = ElementFactory.make("udpsrc", "udp-src");
-		RTPBin rtpBin = (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin");
+		ClientData.rtpBin = (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin");
 		Element depay = ElementFactory.make("rtph263depay", "depay");
 		Element decoder = ElementFactory.make("ffdec_h263", "decoder");
 		Element udpSrcRTCP = ElementFactory.make("udpsrc", "udp-src-rtcp");
 		Element udpSinkRTCP = ElementFactory.make("udpsink", "udp-sink-rtcp");
+		Element teeRTCP = ElementFactory.make("tee", "rtcp-tee");
+		Element queueRTCP = ElementFactory.make("queue", "rtcp-queue");
+		Element queueAppSink = ElementFactory.make("queue", "app-sink-queue");
+		ClientData.RTCPSink = (AppSink)ElementFactory.make("appsink", "rtcp-sink");
 		
 		//Error check
-		if(udpSrc == null || rtpBin == null || depay == null || decoder == null || udpSrcRTCP == null || udpSinkRTCP == null)
+		if(udpSrc == null || ClientData.rtpBin == null || depay == null || decoder == null || udpSrcRTCP == null || udpSinkRTCP == null || teeRTCP == null || queueRTCP == null || queueAppSink == null || ClientData.RTCPSink == null)
 			System.err.println("Could not create all elements");
 	
-		ClientData.pipe.addMany(udpSrc, rtpBin, depay, decoder, ClientData.windowSink);
+		ClientData.pipe.addMany(udpSrc, ClientData.rtpBin, depay, decoder, ClientData.windowSink, udpSrcRTCP, udpSinkRTCP, teeRTCP, queueRTCP, queueAppSink, ClientData.RTCPSink);
 		
 		//Link link-able elements
-		Element.linkMany(udpSrc, rtpBin);
+		Element.linkMany(udpSrc, ClientData.rtpBin);
 		Element.linkMany(depay, decoder, ClientData.windowSink);
+		Element.linkMany(udpSrcRTCP, teeRTCP);
+		Element.linkMany(queueAppSink, ClientData.RTCPSink);
 		
 		//Receive RTP packets on 5001
 		Caps udpCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
@@ -106,29 +121,36 @@ public class ClientPipelineManager{
 		udpSinkRTCP.set("host", "127.0.0.1");
 		udpSinkRTCP.set("port", "5003");
 		
-		//Link sometimes pads manually
-		rtpBin.connect(new Element.PAD_ADDED() {
-			public void padAdded(Element source, Pad newPad) {
-				//System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
-				if(newPad.getName().contains("recv_rtp_src"))
-				{
-					Pad depaySink = ClientData.pipe.getElementByName("depay").getStaticPad("sink");
-					if(!depaySink.isLinked())
-					{
-						newPad.link(depaySink);
-					}
-				}
-			}
-		});
+		teeRTCP.set("silent", false);
+		ClientData.RTCPSink.set("emit-signals", true);
 		
 		//Link request pads manually
-		Pad send_rtcp_src_0 = rtpBin.getRequestPad("send_rtcp_src_0");
+		PadLinkReturn ret = null;
+		//Link rtcp source to udpsink
+		Pad send_rtcp_src_0 = ClientData.rtpBin.getRequestPad("send_rtcp_src_0");
 		Pad udpSinkPadRTCP = udpSinkRTCP.getStaticPad("sink");
-		send_rtcp_src_0.link(udpSinkPadRTCP);
+		ret = send_rtcp_src_0.link(udpSinkPadRTCP);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link send_rtcp_src_0 to udpsink, %s\n", ret.toString());
 		
-		Pad recv_rtcp_sink_0 = rtpBin.getRequestPad("recv_rtcp_sink_0");
-		Pad udpSrcPadRTCP = udpSrcRTCP.getStaticPad("src");
-		udpSrcPadRTCP.link(recv_rtcp_sink_0);
+		//Link tee to queues
+		Pad teeSrcPadRTCP = teeRTCP.getRequestPad("src%d");
+		Pad teeSrcPadAppSink = teeRTCP.getRequestPad("src%d");
+		Pad queueSinkPadRTCP = queueRTCP.getStaticPad("sink");
+		Pad queueSinkPadAppSink = queueAppSink.getStaticPad("sink");
+		ret = teeSrcPadRTCP.link(queueSinkPadRTCP);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link tee to RTCP queue, %s\n", ret.toString());
+		ret = teeSrcPadAppSink.link(queueSinkPadAppSink);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link tee to appsink queue, %s\n", ret.toString());
+		
+		//Link queue to rtcp receiver
+		Pad recv_rtcp_sink_0 = ClientData.rtpBin.getRequestPad("recv_rtcp_sink_0");
+		Pad queueSrcPadRTCP = queueRTCP.getStaticPad("src");
+		ret = queueSrcPadRTCP.link(recv_rtcp_sink_0);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link queue to recv_rtcp_sink_0, %s\n", ret.toString());
 	}
 	
 	/**
@@ -186,6 +208,68 @@ public class ClientPipelineManager{
 					else if(newstate.equals(State.PAUSED))
 						ClientData.pipe.setState(State.PAUSED);
 				}
+			}
+		});
+		
+		//connect to new buffer
+		ClientData.RTCPSink.connect(new AppSink.NEW_BUFFER() {
+			public void newBuffer(AppSink source) {
+				Buffer RTCPBuffer = source.pullBuffer();
+				//CharBuffer RTCPCB = RTCPBuffer.getByteBuffer().asCharBuffer();
+				Byte b = RTCPBuffer.getByteBuffer().get(1);
+				Byte c = new Byte((byte) 200);
+				if(c.equals(b))
+					System.out.println("Sender Report");
+				else
+					System.out.println(b);
+				//IntBuffer RTCPCB = RTCPBuffer.getByteBuffer().asIntBuffer();
+				//System.out.println("Buffer received: " + RTCPCB.get() + RTCPCB.get() + RTCPCB.get() + " capacity " + RTCPCB.capacity());
+			}
+		});
+		
+		//Link sometimes pads on RTPBin
+		ClientData.rtpBin.connect(new Element.PAD_ADDED() {
+			public void padAdded(Element source, Pad newPad) {
+				//System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
+				if(newPad.getName().contains("recv_rtp_src"))
+				{
+					Pad depaySink = ClientData.pipe.getElementByName("depay").getStaticPad("sink");
+					if(!depaySink.isLinked())
+					{
+						newPad.link(depaySink);
+					}
+				}
+			}
+		});
+		
+		//For fetching RTCP packets
+		ClientData.rtpBin.connect(new RTPBin.ON_NEW_SSRC() {
+			public void onNewSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
+				System.out.printf("1 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+				Pointer session = new Pointer(sessionid);
+				System.out.println(session.toString());
+				//rtpBin.emit("get-internal-session", sessionid, session.getPointer(0));
+				//System.out.println("SDES OBJ: " + sdesObj);
+				//Pointer sessionObj = GObjectAPI.GOBJECT_API.g_object_new(GType.POINTER, sdesObj);
+				//System.out.println("HERE" + sessionObj.toString());
+			}
+		});
+		
+		ClientData.rtpBin.connect(new RTPBin.ON_SSRC_SDES() {
+			public void onSsrcSdes(RTPBin rtpBin, int sessionid, int ssrc) {
+				System.out.printf("2 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+			}
+		});
+		
+		ClientData.rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
+			public void onSsrcActive(RTPBin rtpBin, int sessionid, int ssrc) {
+				System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+			}
+		});
+		
+		ClientData.rtpBin.connect(new RTPBin.ON_BYE_SSRC() {
+			public void onByeSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
+				System.out.printf("4 : RTCP packet received BYE from ssrc: %s session: %s\n", ssrc, sessionid);
 			}
 		});
 	}

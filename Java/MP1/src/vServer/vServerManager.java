@@ -48,7 +48,7 @@ public class vServerManager {
 		
 		args = Gst.init("Server Pipeline", args);
 		
-		ServerData.mode = ServerData.mode.SERVER;
+		ServerData.mode = ServerData.Mode.SERVER;
 		
 		ServerPipelineManager.modify_pipeline();
 		

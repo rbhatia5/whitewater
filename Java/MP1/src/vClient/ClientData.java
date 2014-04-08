@@ -7,6 +7,7 @@ import javax.swing.*;
 
 import org.gstreamer.*;
 import org.gstreamer.elements.AppSink;
+import org.gstreamer.elements.good.RTPBin;
 import org.gstreamer.swing.VideoComponent;
 
 public class ClientData {
@@ -25,6 +26,7 @@ public class ClientData {
 	protected static String serverResponse;
 	protected static Pipeline pipe;
 	protected static AppSink RTCPSink;
+	protected static RTPBin rtpBin;
 	protected static Element windowSink;
 	protected static JFrame frame;
 	protected static Mode mode;
