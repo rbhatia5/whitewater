@@ -18,7 +18,7 @@ public class vClientManager {
 		ClientData.state = ClientData.State.NEGOTIATING;
 		
 		ClientResource res = ClientResource.getInstance();
-		res.initWithFile("client-resouces.txt");
+		res.initWithFile("client-resources.txt");
 		
 		
 		
