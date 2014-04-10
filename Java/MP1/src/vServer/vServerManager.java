@@ -34,13 +34,7 @@ public class vServerManager {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		/*
-		try {
-			ServerData.resourcesWriter = new BufferedWriter(new FileWriter(resources));
-		} catch (IOException e) {
-			e.printStackTrace();
-		} 
-		*/
+	
 		
 		initializeTCPServer();
 		

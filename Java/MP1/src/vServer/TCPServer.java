@@ -7,6 +7,9 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.gstreamer.Format;
+import org.gstreamer.SeekFlags;
+import org.gstreamer.SeekType;
 import org.gstreamer.State;
 import org.gstreamer.StateChangeReturn;
 
@@ -86,12 +89,33 @@ public class TCPServer implements Runnable{
 		if(ServerData.clientCommand.contains("play"))
 		{
 			StateChangeReturn ret = ServerData.pipe.setState(State.PLAYING);
+			ServerData.Rate = 1; 
 			System.out.println(ret.toString());
 		}
 		else if(ServerData.clientCommand.contains("pause"))
 		{
 			StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
 			System.out.println(ret.toString());
+		}
+		else if(ServerData.clientCommand.contains("fastforward"))
+		{
+			int rate = ServerData.Rate; 
+			if(rate > 0)
+				rate *= 2;
+			else
+				rate /= 2;
+			
+			ServerData.setRate(ServerData.pipe, rate);
+			System.out.println("Rate is now: " + rate);
+		}
+		else if(ServerData.clientCommand.contains("rewind"))
+		{
+			int rate = ServerData.Rate; 
+			if(rate < 0)
+				rate *= 2;
+			else
+				rate /= 2;
+			ServerData.setRate(ServerData.pipe, -2);
 		}
 	}
 }

@@ -179,7 +179,7 @@ public class ClientGUIManager {
 			public void actionPerformed(ActionEvent e) {
 				if(ClientData.rate < 0)
 					ClientData.rate = 0;
-				ClientData.rate += 2;
+				ClientData.rate *= 2;
 				ClientData.pipe.seek(ClientData.rate, Format.TIME, 0, SeekType.NONE, ClientData.position/1000000000, SeekType.NONE, ClientData.duration/1000000000);
 				
 				sendServerMessage("fastforward");
