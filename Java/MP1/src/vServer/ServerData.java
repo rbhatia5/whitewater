@@ -26,4 +26,7 @@ public class ServerData {
 	protected static Mode mode;
 	protected static BufferedReader resourcesReader;
 	protected static BufferedWriter resourcesWriter;
+	protected static int width;
+	protected static int height;
+	protected static int framerate;
 }

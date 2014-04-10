@@ -204,11 +204,8 @@ public class ClientGUIManager {
 		ClientData.slider = new JSlider(0,(int)(ClientData.duration/1000000000),0);
 		ClientData.slider.addChangeListener(new ChangeListener(){
 			public void stateChanged(ChangeEvent e) {
-				//when state changes, get the new position
 				if(ClientData.seek)
 				{
-					//move stream to that position
-					//System.out.println(ClientData.slider.getValue());
 					ClientData.pipe.seek(ClientData.slider.getValue(), TimeUnit.SECONDS);
 					ClientData.seek = false;
 				}
