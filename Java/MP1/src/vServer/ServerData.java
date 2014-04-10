@@ -29,6 +29,9 @@ public class ServerData {
 	protected static Mode mode;
 	protected static BufferedReader resourcesReader;
 	protected static BufferedWriter resourcesWriter;
+	protected static int width;
+	protected static int height;
+	protected static int framerate;
 	
 	protected static void setRate(Pipeline pipe, int rate)
 	{
@@ -38,4 +41,7 @@ public class ServerData {
 		
 		pipe.seek(rate, format, flags, org.gstreamer.SeekType.NONE, 0, org.gstreamer.SeekType.NONE, 0);
 	}
+
+
+
 }

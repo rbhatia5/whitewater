@@ -43,6 +43,9 @@ public class vServerManager {
 		args = Gst.init("Server Pipeline", args);
 		
 		ServerData.mode = ServerData.Mode.SERVER;
+		ServerData.width = 352;
+		ServerData.height = 288;
+		ServerData.framerate = 30;
 		
 		ServerPipelineManager.modify_pipeline();
 		

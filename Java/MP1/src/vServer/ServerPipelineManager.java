@@ -1,6 +1,7 @@
 package vServer;
 
 import org.gstreamer.Bus;
+import org.gstreamer.Caps;
 import org.gstreamer.Element;
 import org.gstreamer.ElementFactory;
 import org.gstreamer.Gst;
@@ -77,9 +78,9 @@ public class ServerPipelineManager {
 		ServerData.pipe = new Pipeline("server-pipeline");
 		
 		/*
-		___________	   ______________    ______________    _____________    ____________________    __________________    _______________
-		| v4l2src |	-> | ffenc_h263 | -> | rtph263pay | -> | gstrtpbin | -> | .send_rtp_sink_0 | -> |.send_rtp_src_0 | -> | udpsink 5001| 
-		___________    ______________    ______________    _____________    ____________________    __________________    _______________
+		___________	   _____________    ______________    ______________    ______________    _____________    ____________________    __________________    _______________
+		| v4l2src |	-> | videorate | -> | videoscale | -> | ffenc_h263 | -> | rtph263pay | -> | gstrtpbin | -> | .send_rtp_sink_0 | -> |.send_rtp_src_0 | -> | udpsink 5001| 
+		___________    _____________    ______________    ______________    ______________    _____________    ____________________    __________________    _______________
 																|
 																|			____________________    ________________
 																|___\		| .send_rtcp_src_0 | -> | udpsink 5002 |
@@ -94,6 +95,8 @@ public class ServerPipelineManager {
 		
 		//Initialize elements
 		Element source = ElementFactory.make("videotestsrc", "webcam");
+		Element videorate = ElementFactory.make("videorate", "rate");
+		Element videoscale = ElementFactory.make("videoscale", "scale");
 		Element encoder = ElementFactory.make("ffenc_h263", "encoder");
 		Element pay = ElementFactory.make("rtph263pay", "pay");
 		ServerData.rtpBin = (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin"); 
@@ -102,12 +105,26 @@ public class ServerPipelineManager {
 		Element udpRTCPSink = ElementFactory.make("udpsink", "udp-rtcp-sink");
 		
 		//Error check
-		if(source == null || encoder == null || pay == null || ServerData.rtpBin == null || udpRTPSink == null || udpRTCPSrc == null || udpRTCPSink == null)
+		if(source == null || videorate == null || videoscale == null || encoder == null || pay == null || ServerData.rtpBin == null || udpRTPSink == null || udpRTCPSrc == null || udpRTCPSink == null)
 			System.err.println("Could not create all elements");
 		
-		ServerData.pipe.addMany(source, encoder, pay, ServerData.rtpBin, udpRTPSink, udpRTCPSrc, udpRTCPSink);
+		ServerData.pipe.addMany(source, videorate, videoscale, encoder, pay, ServerData.rtpBin, udpRTPSink, udpRTCPSrc, udpRTCPSink);
+		
+		String rateCapsStr = String.format("video/x-raw-yuv,framerate=%s/1", ServerData.framerate);
+		System.out.println(rateCapsStr);
+		Caps rateCaps = Caps.fromString(rateCapsStr);
+		
+		String scaleCapsStr = String.format("video/x-raw-yuv,width=%s,height=%s", ServerData.width, ServerData.height);
+		System.out.println(scaleCapsStr);
+		Caps scaleCaps = Caps.fromString(scaleCapsStr);
 		
 		//Link link-able elements
+		//Element.linkMany(source, videorate);
+		//if(!Element.linkPadsFiltered(videorate, "src", videoscale, "sink", rateCaps))
+		//	System.err.println("Could not connect videotestsrc -> videorate");
+		//if(!Element.linkPadsFiltered(videoscale, "src", encoder, "sink", scaleCaps))
+		//	System.err.println("Could not connect videorate -> videoscale");
+		//Element.linkMany(encoder, pay);
 		Element.linkMany(source, encoder, pay);
 		
 		//Send RTP packets on 5001
@@ -147,11 +164,6 @@ public class ServerPipelineManager {
 		Pad recv_rtcp_sink_0 = ServerData.rtpBin.getRequestPad("recv_rtcp_sink_0");
 		Pad udpSrcPadRTCP = udpRTCPSrc.getStaticPad("src");
 		udpSrcPadRTCP.link(recv_rtcp_sink_0);
-		
-		Element rtpSession = ServerData.rtpBin.getElementByName("rtpsession0");
-		//Pointer p = GObjectAPI.GOBJECT_API.g_type_create_instance(GType.POINTER);
-		//System.out.println();
-		//ServerData.rtpBin.e
 	}
 	
 		
@@ -191,19 +203,20 @@ public class ServerPipelineManager {
 		
 		ServerData.rtpBin.connect(new RTPBin.ON_NEW_SSRC() {
 			public void onNewSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
-				System.out.printf("1 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+				//System.out.printf("1 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
 			}
 		});
 		
 		ServerData.rtpBin.connect(new RTPBin.ON_SSRC_SDES() {
 			public void onSsrcSdes(RTPBin rtpBin, int sessionid, int ssrc) {
-				System.out.printf("2 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+				//System.out.printf("2 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
 			}
 		});
 		
 		ServerData.rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
 			public void onSsrcActive(RTPBin rtpBin, int sessionid, int ssrc) {
-				System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+				//System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
+				Element rtpSession = ServerData.rtpBin.getElementByName("rtpsession0");
 			}
 		});
 	}
