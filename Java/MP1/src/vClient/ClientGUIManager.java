@@ -50,79 +50,6 @@ public class ClientGUIManager {
 	 * Parameters:
 	 * Return:
 	 */
-	public static String adjustProperties()
-	{
-		
-		String resourcesFR = "";
-		String resourcesWidth = "";
-		String resourcesHeight = "";
-
-		try {
-			resourcesFR = ClientData.resourcesReader.readLine();
-			resourcesWidth = ClientData.resourcesReader.readLine();
-			resourcesHeight = ClientData.resourcesReader.readLine();
-			//ClientData.resourcesReader.reset();
-		} catch (IOException e) {
-			System.err.println("Could not read from resources file");
-		}
-		if(Integer.parseInt(resourcesFR) < Integer.parseInt(ClientData.frameRate))
-			ClientData.frameRate = resourcesFR;
-		String resolution[] = ClientData.resolution.split("x");
-		if(Integer.parseInt(resourcesWidth) < Integer.parseInt(resolution[0]))
-			resolution[0] = resourcesWidth;
-		if(Integer.parseInt(resourcesFR) < Integer.parseInt(resolution[1]))
-			resolution[1] = resourcesHeight;
-		
-		ClientData.resolution = resolution[0] + "x" + resolution[1];
-		
-		String properties = ClientData.frameRate + " " + resolution[0] + " " + resolution[1];
-		return properties;
-	}
-	
-	
-	/**
-	 * Author:
-	 * Purpose:
-	 * Parameters:
-	 * Return:
-	 */
-	public static String negotiateProperties(String properties)
-	{		
-		ClientGUIManager.sendServerMessage(properties);
-		while(!ClientData.mainThread.interrupted());
-		
-		if(!ClientData.serverResponse.equals(properties))
-		{
-			System.out.println("Negotiation Failed: Server cannot facilitate request. Modify properties to " + ClientData.serverResponse);
-		}
-		else
-		{
-			System.out.println("Negotiation Successful: Setting properties to " + ClientData.serverResponse);
-		}
-		return ClientData.serverResponse;
-	}
-	
-	
-	/**
-	 * Author:
-	 * Purpose:
-	 * Parameters:
-	 * Return:
-	 */
-	public static void sendServerMessage(String message)
-	{
-		TCPClient client = new TCPClient(message);
-		Thread clientThread = new Thread(client);
-		clientThread.start();
-	}
-	
-	
-	/**
-	 * Author:
-	 * Purpose:
-	 * Parameters:
-	 * Return:
-	 */
 	protected static JPanel createControlPanel()
 	{
 		JButton negotiateButton = new JButton("Negotiate");
@@ -130,8 +57,8 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Negotiating with Server");
-				String properties = ClientGUIManager.adjustProperties();
-				properties = negotiateProperties(properties);
+				String properties = TCPClient.adjustProperties();
+				properties = TCPClient.negotiateProperties(properties);
 				ClientPipelineManager.modify_pipeline();
 			}					
 		});
@@ -145,7 +72,7 @@ public class ClientGUIManager {
 				//ClientData.appSink.setState(State.PLAYING);
 				ClientData.rate = 1;
 				
-				sendServerMessage("play");
+				TCPClient.sendServerMessage("play");
 			}					
 		});
 		
@@ -157,7 +84,7 @@ public class ClientGUIManager {
 				System.out.println("Setting state to paused");
 				ClientData.pipe.setState(State.PAUSED);
 				
-				sendServerMessage("pause");
+				TCPClient.sendServerMessage("pause");
 			}					
 		});
 		
@@ -169,7 +96,7 @@ public class ClientGUIManager {
 				System.out.println("Setting state to ready");
 				ClientData.pipe.setState(State.READY);
 				
-				sendServerMessage("stop");
+				TCPClient.sendServerMessage("stop");
 			}					
 		});
 		
@@ -182,7 +109,7 @@ public class ClientGUIManager {
 				ClientData.rate += 2;
 				ClientData.pipe.seek(ClientData.rate, Format.TIME, 0, SeekType.NONE, ClientData.position/1000000000, SeekType.NONE, ClientData.duration/1000000000);
 				
-				sendServerMessage("fastforward");
+				TCPClient.sendServerMessage("fastforward");
 			}
 		});
 		
@@ -194,7 +121,7 @@ public class ClientGUIManager {
 					ClientData.rate = 0;
 				ClientData.rate -= 2;
 				ClientData.pipe.seek(ClientData.rate, Format.TIME, 0, SeekType.NONE, ClientData.position/1000000000, SeekType.NONE, ClientData.duration/1000000000);
-				sendServerMessage("rewind");
+				TCPClient.sendServerMessage("rewind");
 			}
 		});
 		
