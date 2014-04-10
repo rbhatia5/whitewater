@@ -17,6 +17,15 @@ public class vClientManager {
 	{
 		ClientData.state = ClientData.State.NEGOTIATING;
 		
+		ClientResource res = ClientResource.getInstance();
+		res.initWithFile("client-resouces.txt");
+		
+		
+		
+		
+		System.out.println("Resources are " + res.getBandwidth());
+		
+		
 		File resources = new File("client-resources.txt");
 		try {
 			ClientData.resourcesReader = new BufferedReader(new FileReader(resources));
