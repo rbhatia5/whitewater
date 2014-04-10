@@ -89,7 +89,7 @@ public class TCPServer implements Runnable{
 		if(ServerData.clientCommand.contains("play"))
 		{
 			StateChangeReturn ret = ServerData.pipe.setState(State.PLAYING);
-			ServerData.Rate = 1; 
+			ServerData.setRate(ServerData.pipe, 1); 
 			System.out.println(ret.toString());
 		}
 		else if(ServerData.clientCommand.contains("pause"))
@@ -98,24 +98,25 @@ public class TCPServer implements Runnable{
 			System.out.println(ret.toString());
 		}
 		else if(ServerData.clientCommand.contains("fastforward"))
-		{
-			int rate = ServerData.Rate; 
-			if(rate > 0)
-				rate *= 2;
+		{ 
+			if(ServerData.Rate > 0) {
+				ServerData.setRate(ServerData.pipe, 2 * ServerData.Rate);
+			}
 			else
-				rate /= 2;
-			
-			ServerData.setRate(ServerData.pipe, rate);
-			System.out.println("Rate is now: " + rate);
+			{
+				ServerData.setRate(ServerData.pipe, 1);
+			}
 		}
 		else if(ServerData.clientCommand.contains("rewind"))
 		{
-			int rate = ServerData.Rate; 
-			if(rate < 0)
-				rate *= 2;
-			else
-				rate /= 2;
-			ServerData.setRate(ServerData.pipe, -2);
+
+			if(ServerData.Rate < 0)
+				ServerData.setRate(ServerData.pipe, 2 * ServerData.Rate);
+			else if ( ServerData.Rate == 1)
+				ServerData.setRate(ServerData.pipe, -2);
+			else if ( ServerData.Rate > 1)
+				ServerData.setRate(ServerData.pipe, 1);
+
 		}
 	}
 }

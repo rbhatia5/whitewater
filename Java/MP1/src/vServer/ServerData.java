@@ -39,6 +39,8 @@ public class ServerData {
 		
 		int flags = SeekFlags.ACCURATE | SeekFlags.FLUSH;
 		
+		ServerData.Rate = rate;
+		System.out.println("Rate is now: " + rate);
 		pipe.seek(rate, format, flags, org.gstreamer.SeekType.NONE, 0, org.gstreamer.SeekType.NONE, 0);
 	}
 

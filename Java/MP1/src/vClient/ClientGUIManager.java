@@ -104,11 +104,6 @@ public class ClientGUIManager {
 		JButton fastForwardButton = new JButton("Fastforward");
 		fastForwardButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				if(ClientData.rate < 0)
-					ClientData.rate = 0;
-				ClientData.rate *= 2;
-				ClientData.pipe.seek(ClientData.rate, Format.TIME, 0, SeekType.NONE, ClientData.position/1000000000, SeekType.NONE, ClientData.duration/1000000000);
-				
 				TCPClient.sendServerMessage("fastforward");
 			}
 		});
@@ -117,10 +112,6 @@ public class ClientGUIManager {
 		JButton rewindButton = new JButton("Rewind");
 		rewindButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				if(ClientData.rate > 0)
-					ClientData.rate = 0;
-				ClientData.rate -= 2;
-				ClientData.pipe.seek(ClientData.rate, Format.TIME, 0, SeekType.NONE, ClientData.position/1000000000, SeekType.NONE, ClientData.duration/1000000000);
 				TCPClient.sendServerMessage("rewind");
 			}
 		});
@@ -222,8 +213,8 @@ public class ClientGUIManager {
 	 */
 	protected static JPanel createUserOptionsPanel()	
 	{
-		String[] resList = {"320x240", "640x480", "960x720", "1280x1080"};
-		String[] frList = {"10", "15", "20", "30"};
+		String[] resList = {"320x240", "640x480"};
+		String[] frList = {"10", "25"};
 		
 		//frame rate list picker
 		JComboBox resCB = new JComboBox(resList);
@@ -238,10 +229,6 @@ public class ClientGUIManager {
 					ClientData.resolution = "320x240";
 				else if(selected.equals("640x480"))
 					ClientData.resolution = "640x480";
-				else if(selected.equals("960x720"))
-					ClientData.resolution = "960x720";
-				else if(selected.equals("1280x1080"))
-					ClientData.resolution = "1280x1080";
 			}
 		});
 		//resolution list picker
@@ -255,12 +242,9 @@ public class ClientGUIManager {
 				String selected = (String)source.getSelectedItem();
 				if(selected.equals("10"))
 					ClientData.frameRate = "10";
-				else if(selected.equals("15"))
-					ClientData.frameRate = "15";
-				else if(selected.equals("20"))
-					ClientData.frameRate = "20";
-				else if(selected.equals("30"))
-					ClientData.frameRate = "30";
+				else if(selected.equals("25"))
+					ClientData.frameRate = "25";
+		
 			}
 		});
 		
