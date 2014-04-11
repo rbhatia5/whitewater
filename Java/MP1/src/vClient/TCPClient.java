@@ -54,40 +54,7 @@ public class TCPClient implements Runnable{
 			e.printStackTrace();
 		}
 	}
-	
-	/**
-	 * Author:
-	 * Purpose:
-	 * Parameters:
-	 * Return:
-	 */
-	public static String adjustProperties()
-	{
-		
-		String resourcesFR = "";
-		String resourcesWidth = "";
-		String resourcesHeight = "";
 
-		resourcesFR = ClientData.frameRate;
-		resourcesWidth = ClientData.resolution.split("x")[0];
-		resourcesHeight = ClientData.resolution.split("x")[1];
-		
-		
-		
-		if(Integer.parseInt(resourcesFR) < Integer.parseInt(ClientData.frameRate))
-			ClientData.frameRate = resourcesFR;
-		String resolution[] = ClientData.resolution.split("x");
-		if(Integer.parseInt(resourcesWidth) < Integer.parseInt(resolution[0]))
-			resolution[0] = resourcesWidth;
-		if(Integer.parseInt(resourcesFR) < Integer.parseInt(resolution[1]))
-			resolution[1] = resourcesHeight;
-		
-		ClientData.resolution = resolution[0] + "x" + resolution[1];
-		
-		String properties = ClientData.frameRate + " " + resolution[0] + " " + resolution[1];
-		return properties;
-	}
-	
 	
 	/**
 	 * Author:

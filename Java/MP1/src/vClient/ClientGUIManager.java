@@ -57,7 +57,7 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Negotiating with Server");
-				String properties = TCPClient.adjustProperties();
+				String properties = Integer.toString(ClientData.frameRate) + " " + ClientData.FrameRes.getWidth() +  " " + ClientData.FrameRes.getHeight();//TCPClient.adjustProperties();
 				properties = TCPClient.negotiateProperties(properties);
 				ClientPipelineManager.modify_pipeline();
 			}					
@@ -226,9 +226,9 @@ public class ClientGUIManager {
 				JComboBox source = (JComboBox)e.getSource();
 				String selected = (String)source.getSelectedItem();
 				if(selected.equals("320x240"))
-					ClientData.resolution = "320x240";
+					ClientData.FrameRes.setRes("320x240");
 				else if(selected.equals("640x480"))
-					ClientData.resolution = "640x480";
+					ClientData.FrameRes.setRes("640x480");
 			}
 		});
 		//resolution list picker
@@ -241,9 +241,9 @@ public class ClientGUIManager {
 				JComboBox source = (JComboBox)e.getSource();
 				String selected = (String)source.getSelectedItem();
 				if(selected.equals("10"))
-					ClientData.frameRate = "10";
+					ClientData.setFrameRate(10);
 				else if(selected.equals("25"))
-					ClientData.frameRate = "25";
+					ClientData.setFrameRate(25);
 		
 			}
 		});

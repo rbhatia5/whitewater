@@ -31,7 +31,7 @@ public class ClientData {
 	protected static JFrame frame;
 	protected static Mode mode;
 	protected static VideoComponent vid_comp;
-	protected static String frameRate;
+	protected static int frameRate;
 	protected static String resolution;
 	protected static List<JButton> controlButtons = new ArrayList<JButton>(); 
 	protected static JPanel controls;
@@ -43,8 +43,6 @@ public class ClientData {
 	protected static long position;
 	protected static long timeStamp;
 	protected static long encDecTime;
-	protected static BufferedReader resourcesReader;
-	protected static BufferedWriter resourcesWriter;
 	
 	public static class FrameRes {
 		private static int width;
@@ -55,25 +53,25 @@ public class ClientData {
 		}
 		
 		public static void setRes(String res){
-			String params[] = ClientData.getResolution().split("x");
+			String params[] = res.split("x");
 			width = Integer.parseInt(params[0]);
 			height = Integer.parseInt(params[1]);
 		}
 		
-		public int getWidth() {
+		public static int getWidth() {
 			return width;
 		}
 		
-		public void setWidth(int width) {
+		public static void setWidth(int width) {
 			FrameRes.width = width;
 		}
 
 
-		public int getHeight() {
+		public static int getHeight() {
 			return height;
 		}
 		
-		public void setHeight(int height) {
+		public static void setHeight(int height) {
 			FrameRes.height = height;
 		}
 		
@@ -164,10 +162,10 @@ public class ClientData {
 	}
 	
 	//FrameRate
-	public static String getFrameRate() {
+	public static int getFrameRate() {
 		return frameRate;
 	}
-	public static void setFrameRate(String frameRate) {
+	public static void setFrameRate(int frameRate) {
 		ClientData.frameRate = frameRate;
 	}
 	
@@ -181,7 +179,7 @@ public class ClientData {
 	}
 	
 	public static int getProposedBandwidth() throws IOException{
-		return FrameRes.getFrameSize()*Integer.getInteger(getFrameRate());
+		return FrameRes.getFrameSize()*getFrameRate();
 	}
 	
 	//ControlButton
@@ -264,21 +262,7 @@ public class ClientData {
 		ClientData.encDecTime = encDecTime;
 	}
 	
-	//BufferReader
-	public static BufferedReader getResourcesReader() {
-		return resourcesReader;
-	}
-	public static void setResourcesReader(BufferedReader resourcesReader) {
-		ClientData.resourcesReader = resourcesReader;
-	}
-	
-	//BufferWriter
-	public static BufferedWriter getResourcesWriter() {
-		return resourcesWriter;
-	}
-	public static void setResourcesWriter(BufferedWriter resourcesWriter) {
-		ClientData.resourcesWriter = resourcesWriter;
-	}
+
 
 }
 
