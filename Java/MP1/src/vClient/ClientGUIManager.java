@@ -5,19 +5,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.ButtonGroup;
+
 import javax.swing.GroupLayout;
-import javax.swing.ImageIcon;
+
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
+
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
+
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
@@ -25,21 +23,12 @@ import javax.swing.LayoutStyle;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.gstreamer.Bus;
-import org.gstreamer.Format;
-import org.gstreamer.Message;
-import org.gstreamer.MessageType;
-import org.gstreamer.Pad;
-import org.gstreamer.SeekType;
-import org.gstreamer.State;
-import org.gstreamer.StateChangeReturn;
-import org.gstreamer.Structure;
-import org.gstreamer.event.FlushStartEvent;
-import org.gstreamer.event.FlushStopEvent;
-import org.gstreamer.lowlevel.*;
+import vNetwork.Message;
+import vNetwork.Message.MessageType;
 
-import vClient.ClientData.Mode;
-import vServer.ServerData;
+import org.gstreamer.State;
+import org.json.JSONException;
+
 
 public class ClientGUIManager {
 	
@@ -62,8 +51,22 @@ public class ClientGUIManager {
 				{
 					ClientResource.getInstance().adjustResources(ClientData.getProposedBandwidth());
 					String properties = Integer.toString(ClientData.frameRate) + " " + ClientData.FrameRes.getWidth() +  " " + ClientData.FrameRes.getHeight();
-					properties = TCPClient.negotiateProperties(properties);
-					ClientPipelineManager.modify_pipeline();
+					Message streamRequest = new Message();
+					try {
+					
+						streamRequest.setSender("CL00"); streamRequest.setType(MessageType.REQUEST); 
+						streamRequest.addData(Message.FRAMERATE_KEY, ClientData.frameRate);
+						streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
+						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
+					}catch(JSONException j)
+					{
+						System.err.println("Could not build a stream request");
+						return;
+					}
+					boolean result = TCPClient.negotiateProperties(streamRequest);
+					
+					if(result)
+						ClientPipelineManager.modify_pipeline();
 				}
 				else {
 					System.err.println("Client Resource Admission Failed");
@@ -82,7 +85,21 @@ public class ClientGUIManager {
 				//ClientData.appSink.setState(State.PLAYING);
 				ClientData.rate = 1;
 				
-				TCPClient.sendServerMessage("play");
+				//TCPClient.sendServerMessage("play");
+				
+				Message play = new Message(MessageType.CONTROL);
+				
+				try {
+					play.setSender("VC00");
+					play.addData(Message.ACTION_KEY, Message.PLAY_ACTION);
+					
+				} catch (JSONException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				TCPClient.sendServerMessage(play);
+				
 			}					
 		});
 		
@@ -94,7 +111,20 @@ public class ClientGUIManager {
 				System.out.println("Setting state to paused");
 				ClientData.pipe.setState(State.PAUSED);
 				
-				TCPClient.sendServerMessage("pause");
+				//TCPClient.sendServerMessage("pause");
+				
+				Message pause = new Message(MessageType.CONTROL);
+				
+				try {
+					pause.setSender("VC00");
+					pause.addData(Message.ACTION_KEY, Message.PAUSE_ACTION);
+					
+				} catch (JSONException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				TCPClient.sendServerMessage(pause);
 			}					
 		});
 		
@@ -106,7 +136,21 @@ public class ClientGUIManager {
 				System.out.println("Setting state to ready");
 				ClientData.pipe.setState(State.READY);
 				
-				TCPClient.sendServerMessage("stop");
+				//TCPClient.sendServerMessage("stop");
+				
+				Message stop = new Message(MessageType.CONTROL);
+				
+				try {
+					stop.setSender("VC00");
+					stop.addData(Message.ACTION_KEY, Message.STOP_ACTION);
+					
+				} catch (JSONException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				TCPClient.sendServerMessage(stop);
+				
 			}					
 		});
 		
@@ -114,7 +158,20 @@ public class ClientGUIManager {
 		JButton fastForwardButton = new JButton("Fastforward");
 		fastForwardButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				TCPClient.sendServerMessage("fastforward");
+				//TCPClient.sendServerMessage("fastforward");
+			
+				Message ff = new Message(MessageType.CONTROL);
+				
+				try {
+					ff.setSender("VC00");
+					ff.addData(Message.ACTION_KEY, Message.FAST_FORWARD_ACTION);
+					
+				} catch (JSONException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				TCPClient.sendServerMessage(ff);
 			}
 		});
 		
@@ -122,7 +179,21 @@ public class ClientGUIManager {
 		JButton rewindButton = new JButton("Rewind");
 		rewindButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				TCPClient.sendServerMessage("rewind");
+				//TCPClient.sendServerMessage("rewind");
+				
+				Message rw = new Message(MessageType.CONTROL);
+				
+				try {
+					rw.setSender("VC00");
+					rw.addData(Message.ACTION_KEY, Message.REWIND_ACTION);
+					
+				} catch (JSONException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				TCPClient.sendServerMessage(rw);
+				
 			}
 		});
 		

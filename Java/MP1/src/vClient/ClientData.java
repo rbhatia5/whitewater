@@ -1,7 +1,8 @@
 package vClient;
 
-import java.io.*;
+
 import java.util.*;
+import vNetwork.Message;
 
 import javax.swing.*;
 
@@ -27,6 +28,7 @@ public class ClientData {
 	protected static Thread mainThread;
 	protected static State state;
 	protected static String serverResponse;
+	protected static Message serverMessage;
 	protected static Pipeline pipe;
 	protected static AppSink RTCPSink;
 	protected static RTPBin rtpBin;

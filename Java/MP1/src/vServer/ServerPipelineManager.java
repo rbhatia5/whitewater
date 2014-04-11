@@ -1,7 +1,7 @@
 package vServer;
 
 import org.gstreamer.Bus;
-import org.gstreamer.Caps;
+
 import org.gstreamer.Element;
 import org.gstreamer.ElementFactory;
 import org.gstreamer.Gst;
@@ -9,14 +9,8 @@ import org.gstreamer.GstObject;
 import org.gstreamer.Pad;
 import org.gstreamer.Pipeline;
 import org.gstreamer.State;
-import org.gstreamer.Structure;
-import org.gstreamer.TagList;
 import org.gstreamer.elements.good.RTPBin;
-import org.gstreamer.lowlevel.GObjectAPI;
-import org.gstreamer.lowlevel.GType;
-import org.gstreamer.lowlevel.GstTypes;
 
-import com.sun.jna.Pointer;
 
 import vServer.ServerData;
 
@@ -38,10 +32,12 @@ public class ServerPipelineManager {
 			server_pipeline();
 			connect_to_signals();
 			ServerData.pipe.setState(State.READY);
+			//ServerData.pipe.setState(State.PAUSED);
 			break;
 		default:
 			System.out.println("Unrecognized pipeline");
 			ServerData.pipe.setState(State.READY);
+			//ServerData.pipe.setState(State.PAUSED);
 			break;
 		}
 	}
@@ -112,11 +108,11 @@ public class ServerPipelineManager {
 		
 		String rateCapsStr = String.format("video/x-raw-yuv,framerate=%s/1", ServerData.framerate);
 		System.out.println(rateCapsStr);
-		Caps rateCaps = Caps.fromString(rateCapsStr);
+		//Caps rateCaps = Caps.fromString(rateCapsStr);
 		
 		String scaleCapsStr = String.format("video/x-raw-yuv,width=%s,height=%s", ServerData.width, ServerData.height);
 		System.out.println(scaleCapsStr);
-		Caps scaleCaps = Caps.fromString(scaleCapsStr);
+		//Caps scaleCaps = Caps.fromString(scaleCapsStr);
 		
 		//Link link-able elements
 		//Element.linkMany(source, videorate);
@@ -216,7 +212,7 @@ public class ServerPipelineManager {
 		ServerData.rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
 			public void onSsrcActive(RTPBin rtpBin, int sessionid, int ssrc) {
 				//System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
-				Element rtpSession = ServerData.rtpBin.getElementByName("rtpsession0");
+				//Element rtpSession = ServerData.rtpBin.getElementByName("rtpsession0");
 			}
 		});
 	}

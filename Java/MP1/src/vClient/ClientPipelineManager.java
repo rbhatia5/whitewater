@@ -1,18 +1,13 @@
 package vClient;
 
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.IntBuffer;
-import java.util.concurrent.TimeUnit;
+
 
 import org.gstreamer.*;
-import org.gstreamer.elements.AppSink;
-import org.gstreamer.elements.good.RTPBin;
-import org.gstreamer.event.SeekEvent;
-import org.gstreamer.lowlevel.GObjectAPI;
-import org.gstreamer.lowlevel.GType;
 
-import com.sun.jna.Pointer;
+import org.gstreamer.elements.good.RTPBin;
+
+
 
 
 
@@ -113,12 +108,12 @@ public class ClientPipelineManager{
 		//Receive RTP packets on 5001
 		Caps udpCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
 		udpSrc.setCaps(udpCaps);
-		udpSrc.set("port", "5001");
+		udpSrc.set("port", "5002");
 		//Receive RTCP packets on 5002
-		udpSrcRTCP.set("port", "5002");
+		udpSrcRTCP.set("port", "5003");
 		//Send RTP packets on 5003
 		udpSinkRTCP.set("host", "127.0.0.1");
-		udpSinkRTCP.set("port", "5003");
+		udpSinkRTCP.set("port", "5004");
 		
 		//teeRTCP.set("silent", false);
 		//ClientData.RTCPSink.set("emit-signals", true);
@@ -278,7 +273,6 @@ public class ClientPipelineManager{
 	{
 		Byte RC;
 		Byte PT;
-		int length;
 		int SSRC_S;
 		int SSRC_R;
 		Byte fractionLost;
@@ -290,7 +284,6 @@ public class ClientPipelineManager{
 		System.out.printf("PT RECEIVED: %s\n", (256 + PT));
 		if(PT == SR)
 		{
-			length = buffer.getShort(2);
 			SSRC_S = buffer.getInt(4);
 			SSRC_R = buffer.getInt(28);
 			fractionLost = buffer.get(32);

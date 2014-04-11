@@ -9,13 +9,14 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import org.gstreamer.Format;
-import org.gstreamer.SeekFlags;
-import org.gstreamer.SeekType;
 import org.gstreamer.State;
 import org.gstreamer.StateChangeReturn;
+import org.json.JSONException;
 
-import vClient.ClientData;
+import vNetwork.Message;
+import vNetwork.Message.MessageType;
+
+
 
 public class TCPServer implements Runnable{
 	
@@ -40,18 +41,64 @@ public class TCPServer implements Runnable{
 				System.out.println("SERVER: Reading from socket");
 				clientString = inFromClient.readLine() + "\n";
 				ServerData.clientCommand = clientString;
+				try {
+					ServerData.clientMessage = Message.destringify(clientString);
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				if(ServerData.state.equals(ServerData.State.NEGOTIATING))
 				{
-					serverString = negotiate();
-					ServerData.state = ServerData.State.STREAMING;
-					outToClient.writeBytes(serverString + "\n");
-					ServerData.mainThread.interrupt();
+					if(negotiate())
+					{
+						ServerData.state = ServerData.State.STREAMING;
+						Message msg = new Message();
+						try {
+							msg.setSender("SV00"); msg.setType(MessageType.RESPONSE); msg.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
+							outToClient.writeBytes(msg.stringify() + "\n");
+						}
+						catch(JSONException j){
+							System.err.println("Could not send response to client");
+							
+						}
+						
+						ServerData.mainThread.interrupt();
+					}
+					else
+					{
+						Message msg = new Message();
+						try {
+							msg.setSender("SV00"); msg.setType(MessageType.RESPONSE); msg.addData(Message.RESULT_KEY, Message.RESULT_REJECT_VALUE);
+							outToClient.writeBytes(msg.stringify() + "\n");
+						}
+						catch(JSONException j){
+							System.err.println("Could not send response to client");
+							
+						}
+						
+						ServerData.mainThread.interrupt();
+					}
 				}
 				else if(ServerData.state.equals(ServerData.State.STREAMING))
 				{
 					adaptPipeline();
-					serverString = "State change successful";
-					outToClient.writeBytes(serverString + "\n");
+					//SEND SUCCESS MESSAGE
+					//serverString = "State change successful";
+					//outToClient.writeBytes(serverString + "\n");
+					
+					Message response = new Message (MessageType.RESPONSE);
+					try {
+						response.setSender("SV00");
+						response.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
+						outToClient.writeBytes(response.stringify() + '\n');
+					} catch(JSONException j)
+					{
+						j.printStackTrace();
+						System.err.println("could not send rseponse to client");
+					}
+					
+					
+					
 				}
 			}
 		} catch (IOException e) {
@@ -59,36 +106,97 @@ public class TCPServer implements Runnable{
 		}
 	}	
 	
-	public static String negotiate()
+	public static boolean negotiate()
 	{
-		String resourcesFR = "";
-		String resourcesWidth = "";
-		String resourcesHeight = "";
+		
+		
+		int framerate, width, height;
+		
 		try {
-			resourcesFR = ServerData.resourcesReader.readLine();
-			resourcesWidth = ServerData.resourcesReader.readLine();
-			resourcesHeight = ServerData.resourcesReader.readLine();
-			//ServerData.resourcesReader.reset();
-		} catch (IOException e) {
+			 framerate = (Integer)ServerData.clientMessage.getData(Message.FRAMERATE_KEY);
+			 width = (Integer)ServerData.clientMessage.getData(Message.FRAME_WIDTH_KEY);
+			 height = (Integer)ServerData.clientMessage.getData(Message.FRAME_HEIGHT_KEY);
+			
+			
+		} catch (JSONException e) {
+			
+			// TODO Auto-generated catch block
 			e.printStackTrace();
+			
+			return false;
+		} 
+		
+		int proposedBandwidth = framerate*width*height*3;
+		
+		if(proposedBandwidth<= ServerResource.getInstance().getBandwidth()){
+			
+			ServerResource.getInstance().adjustResources(proposedBandwidth);
+			//String negotiatedResources = framerate + " " + width + "x" + height;
+			return true;
 		}
-		
-		String resources[] = ServerData.clientCommand.split(" ");
-		System.out.println(resources[0] + resources[1] + resources[2]);
-		
-		if(Integer.parseInt(resourcesFR) < Integer.parseInt(resources[0]))
-			resources[0] = resourcesFR;
-		if(Integer.parseInt(resourcesWidth) < Integer.parseInt(resources[1]))
-			resources[1] = resourcesWidth;
-		if(Integer.parseInt(resourcesHeight) < Integer.parseInt(resources[2].replace("\n", "")))
-			resources[2] = resourcesHeight;
-		
-		String negotiatedResources = resources[0] + " " + resources[1] + " " + resources[2];
-		return negotiatedResources;
+		else
+			return false;
+			
+
 	}
 	
 	public static void adaptPipeline()
 	{
+		
+		if(ServerData.clientMessage == null || ServerData.clientMessage.getType() != Message.MessageType.CONTROL)
+			return;
+		
+
+		try {
+			String action = (String)ServerData.clientMessage.getData(Message.ACTION_KEY);
+			
+			if(action.equals(Message.PLAY_ACTION))
+			{
+				StateChangeReturn ret = ServerData.pipe.setState(State.PLAYING);
+				ServerData.setRate(ServerData.pipe, 1); 
+				System.out.println(ret.toString());
+			}
+			else if(action.equals(Message.PAUSE_ACTION))
+			{
+				StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
+				System.out.println(ret.toString());
+			}
+			else if(action.equals(Message.FAST_FORWARD_ACTION))
+			{ 
+				if(ServerData.Rate > 0) {
+					ServerData.setRate(ServerData.pipe, 2 * ServerData.Rate);
+				}
+				else
+				{
+					ServerData.setRate(ServerData.pipe, 1);
+				}
+			}
+			else if(action.equals(Message.REWIND_ACTION))
+			{
+
+				if(ServerData.Rate < 0)
+					ServerData.setRate(ServerData.pipe, 2 * ServerData.Rate);
+				else if ( ServerData.Rate == 1)
+					ServerData.setRate(ServerData.pipe, -2);
+				else if ( ServerData.Rate > 1)
+					ServerData.setRate(ServerData.pipe, 1);
+
+			}
+			
+			
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			System.err.println("Action coudl not be read");
+			e.printStackTrace();
+		}
+		
+		
+		
+		
+		
+
+		/*
+		
 		if(ServerData.clientCommand.contains("play"))
 		{
 			StateChangeReturn ret = ServerData.pipe.setState(State.PLAYING);
@@ -121,5 +229,7 @@ public class TCPServer implements Runnable{
 				ServerData.setRate(ServerData.pipe, 1);
 
 		}
+	*/
 	}
+	
 }

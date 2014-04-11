@@ -5,9 +5,28 @@ import org.json.JSONObject;
 
 public class Message {
 
+	//Key Names
 	private final static String SENDER_KEY = "sender";
 	private final static String MESSAGE_TYPE_KEY = "message-type";
 	private final static String DATA_KEY = "data";
+	
+	
+	//Stream Request Keys
+	public final static String FRAMERATE_KEY = "frame-rate";
+	public final static String FRAME_WIDTH_KEY = "frame-width";
+	public final static String FRAME_HEIGHT_KEY = "frame-height";
+	
+	//Control Request Keys
+	public final static String ACTION_KEY = "action";
+	public final static String PLAY_ACTION = "play";
+	public final static String PAUSE_ACTION = "pause";
+	public final static String REWIND_ACTION = "rw";
+	public final static String FAST_FORWARD_ACTION = "ff";
+	public final static String STOP_ACTION = "stop";
+	public static final String RESULT_KEY = "result";
+	public static final String RESULT_ACCEPT_VALUE = "accept";
+	public static final String RESULT_REJECT_VALUE = "reject";
+	
 	
 	
 	public enum MessageType {
@@ -25,6 +44,13 @@ public class Message {
 	{
 		sender = new String();
 		mType = Message.MessageType.NULL;
+		data = new JSONObject();
+	}
+	
+	public Message(MessageType type)
+	{
+		sender = new String();
+		mType = type;
 		data = new JSONObject();
 	}
 	
@@ -47,7 +73,8 @@ public class Message {
 	
 	public static Message destringify(String message) throws JSONException
 	{	
-
+			if(message == null)
+				return  new Message();
 			Message ret = new Message();
 			JSONObject msgObj = new JSONObject(message);
 			

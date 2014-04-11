@@ -1,44 +1,39 @@
-package vClient;
+/**
+ * 
+ */
+package vServer;
 
-
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
 
 
 
-/*Client Side resource Singleton!
- * Used to manage bandwidth resouces on the client
- * Implements functionality to set,get,write,read resources
- * Will be extended to allow resource validation
+/**
+ * @author kdperei2
+ *
  */
-
-public class ClientResource {
-
-	private static ClientResource instance = null; 
+public class ServerResource {
+	private static ServerResource instance = null; 
 	protected int bandwidth;
 	protected String filepath;
 	
-	protected ClientResource()
-	{
+	protected ServerResource(){
 		
 	}
 	
-	
-	
-	public static ClientResource getInstance()
+	public static ServerResource getInstance()
 	{
 		if(instance == null)
-			instance = new ClientResource();
+			instance = new ServerResource();
 		
 		return instance;
 	}
-	
-
 	
 	public void setResourcePath(String fname)
 	{
@@ -55,7 +50,6 @@ public class ClientResource {
 	{
 		if(newband >= 0)
 			bandwidth = newband; 
-		writeToFile();
 	}
 	
 	public boolean isValid()
@@ -65,14 +59,15 @@ public class ClientResource {
 		else
 			return false;
 	}
+	
 	public int saveToFile()
 	{
 		if(filepath == null) {
 			return -1;
 		}
 		try {
-			File resources = new File(filepath);
-			BufferedWriter writer = new BufferedWriter(new FileWriter(resources));
+			File serverResources = new File(filepath);
+			BufferedWriter writer = new BufferedWriter(new FileWriter(serverResources));
 			writer.write(String.valueOf(bandwidth));
 	
 			
@@ -92,10 +87,10 @@ public class ClientResource {
 	
 	public void readFromFile()
 	{
-		File resources = new File(filepath);
+		File serverResources = new File(filepath);
 		int savedValue = 0; 
 		try {
-			Scanner s = new Scanner(resources);
+			Scanner s = new Scanner(serverResources);
 			if(s.hasNextInt())
 			{
 				savedValue = s.nextInt();
@@ -115,10 +110,10 @@ public class ClientResource {
 	
 	public void writeToFile()
 	{
-		File resources = new File(filepath);
+		File serverResources = new File(filepath);
 		BufferedWriter wtr; 
 		try {
-			wtr = new BufferedWriter(new FileWriter(resources));
+			wtr = new BufferedWriter(new FileWriter(serverResources));
 			wtr.write(Integer.toString(getBandwidth()));
 			wtr.close();
 		} catch (FileNotFoundException e) {
@@ -129,23 +124,13 @@ public class ClientResource {
 			e.printStackTrace();
 			bandwidth = -1;
 		}
-	}
-
-	
-	public boolean checkForResource(int requestedBand)
-	{
-		if(requestedBand <= getBandwidth())
-			return true;
-		else
-			return false;
+		
 	}
 	
 	public void adjustResources(int requestedBand){
-
 		int remainingBandwidth = this.getBandwidth() - requestedBand;
 		setBandwidth(remainingBandwidth);
 		writeToFile();
-
 	}
 	
 	public void initWithFile(String fname)
@@ -153,6 +138,5 @@ public class ClientResource {
 		this.setResourcePath(fname);
 		this.readFromFile();
 	}
-	
 	
 }

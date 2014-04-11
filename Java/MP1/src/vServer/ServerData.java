@@ -2,12 +2,14 @@ package vServer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
+
 
 import org.gstreamer.Format;
 import org.gstreamer.Pipeline;
 import org.gstreamer.SeekFlags;
 import org.gstreamer.elements.good.RTPBin;
+
+import vNetwork.Message;
 
 public class ServerData {
 
@@ -32,6 +34,8 @@ public class ServerData {
 	protected static int width;
 	protected static int height;
 	protected static int framerate;
+	protected static Message clientMessage;
+	
 	
 	protected static void setRate(Pipeline pipe, int rate)
 	{
