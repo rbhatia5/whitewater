@@ -1,15 +1,10 @@
 package vClient;
 
 import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.net.*;
 import javax.swing.*;
 
 import org.gstreamer.*;
 import org.gstreamer.swing.*;
-import org.gstreamer.elements.*;
-import org.gstreamer.elements.good.RTPBin;
 
 public class vClientManager {
 	
@@ -25,9 +20,9 @@ public class vClientManager {
 		
 		args = Gst.init("Client Pipeline", args);
 		
-		ClientData.mode = ClientData.Mode.CLIENT;
+		ClientData.mode = ClientData.Mode.PASSIVE;
 		
-		ClientData.FrameRes.setRes("640x480");
+		ClientData.FrameRes.setRes("320x240");
 		ClientData.frameRate = 10;
 		ClientData.seek = false;
 		

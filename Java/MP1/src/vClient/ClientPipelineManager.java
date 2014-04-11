@@ -32,20 +32,12 @@ public class ClientPipelineManager{
 	 */
 	protected static void modify_pipeline()
 	{
-		switch(ClientData.mode)
-		{
-		case CLIENT:
 			System.out.println("Initializing Client");
 			discard_pipeline();
 			client_pipeline();
 			connect_to_signals();
 			ClientData.pipe.setState(State.READY);
-			break;
-		default:
-			System.out.println("Unrecognized pipeline");
-			ClientData.pipe.setState(State.READY);
-			break;
-		}
+		
 	}
 	
 	

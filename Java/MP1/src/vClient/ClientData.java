@@ -14,12 +14,15 @@ public class ClientData {
 
 	public enum Mode
 	{
-		CLIENT
+		ACTIVE, PASSIVE
 	}
 	
 	public enum State {
 		NEGOTIATING, STREAMING
 	}
+	
+	protected static final int BYTES_PER_PIXEL = 3;
+	
 	
 	protected static Thread mainThread;
 	protected static State state;
@@ -75,7 +78,7 @@ public class ClientData {
 			FrameRes.height = height;
 		}
 		
-		public static int getFrameSize() throws IOException{
+		public static int getFrameSize() {
 			return width*height;
 		}
 		
@@ -178,8 +181,8 @@ public class ClientData {
 		ClientData.FrameRes.setRes(resolution);
 	}
 	
-	public static int getProposedBandwidth() throws IOException{
-		return FrameRes.getFrameSize()*getFrameRate();
+	public static int getProposedBandwidth() {
+		return BYTES_PER_PIXEL*FrameRes.getFrameSize()*getFrameRate();
 	}
 	
 	//ControlButton

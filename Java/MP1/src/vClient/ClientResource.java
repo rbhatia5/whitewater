@@ -75,7 +75,6 @@ public class ClientResource {
 			writer.write(String.valueOf(bandwidth));
 	
 			
-			
 		}catch (FileNotFoundException e)
 		{
 			//e.printStackTrace();
@@ -93,34 +92,34 @@ public class ClientResource {
 	public void readFromFile()
 	{
 		File resources = new File(filepath);
-		BufferedReader rdr; 
 		int savedValue = 0; 
 		try {
-			rdr = new BufferedReader(new FileReader(resources));
 			Scanner s = new Scanner(resources);
-			savedValue = s.nextInt();
-			if(savedValue >= 0)
-				bandwidth = savedValue;
+			if(s.hasNextInt())
+			{
+				savedValue = s.nextInt();
+				if(savedValue >= 0)
+					bandwidth = savedValue;
+				else
+					bandwidth = -1; 
+			}
 			else
 				bandwidth = -1; 
+			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			bandwidth = -1; 
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-			bandwidth = -1;
-		}
+		} 
 	}
 	
 	public void writeToFile()
 	{
 		File resources = new File(filepath);
 		BufferedWriter wtr; 
-		int savedValue = 0; 
 		try {
 			wtr = new BufferedWriter(new FileWriter(resources));
-			//wtr.
+			wtr.write(Integer.toString(getBandwidth()));
+			wtr.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			bandwidth = -1; 
@@ -132,18 +131,13 @@ public class ClientResource {
 	}
 
 	
-	public String adjustResources(){
-		try {
+	public void adjustResources(){
+
 		
 		int remainingBandwidth = this.getBandwidth()-ClientData.getProposedBandwidth();
-			
-		return "sdasd";
-			
-		}catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		return "dfdsfDS";
+		setBandwidth(remainingBandwidth);
+		writeToFile();
+
 	}
 	
 	public void initWithFile(String fname)
