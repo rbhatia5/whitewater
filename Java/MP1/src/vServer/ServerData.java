@@ -35,8 +35,25 @@ public class ServerData {
 	protected static int height;
 	protected static int framerate;
 	protected static Message clientMessage;
+	protected static String ipAddress;
 	
 	
+	
+	
+	public static String getIpAddress() {
+		return ipAddress;
+	}
+
+
+
+
+	public static void setIpAddress(String ipAddress) {
+		ServerData.ipAddress = ipAddress;
+	}
+
+
+
+
 	protected static void setRate(Pipeline pipe, int rate)
 	{
 		Format format = org.gstreamer.Format.TIME;

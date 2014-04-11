@@ -112,7 +112,7 @@ public class ClientPipelineManager{
 		//Receive RTCP packets on 5002
 		udpSrcRTCP.set("port", "5003");
 		//Send RTP packets on 5003
-		udpSinkRTCP.set("host", "127.0.0.1");
+		udpSinkRTCP.set("host",ClientData.serverAddress);
 		udpSinkRTCP.set("port", "5004");
 		
 		//teeRTCP.set("silent", false);

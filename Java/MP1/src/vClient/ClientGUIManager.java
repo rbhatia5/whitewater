@@ -57,10 +57,11 @@ public class ClientGUIManager {
 					Message streamRequest = new Message();
 					try {
 					
-						streamRequest.setSender("CL00"); streamRequest.setType(MessageType.REQUEST); 
+						streamRequest.setSender("CL??"); streamRequest.setType(MessageType.REQUEST); 
 						streamRequest.addData(Message.FRAMERATE_KEY, ClientData.frameRate);
 						streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
 						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
+						streamRequest.addData(Message.CLIENT_IP_ADDRESS, ClientData.ipAddress);
 					}catch(JSONException j)
 					{
 						System.err.println("Could not build a stream request");

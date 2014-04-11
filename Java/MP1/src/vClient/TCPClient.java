@@ -11,6 +11,8 @@ public class TCPClient implements Runnable{
 
 	private String message;
 	private Message msg;
+	
+	
 
 	/**
 	 * Author:
@@ -47,7 +49,7 @@ public class TCPClient implements Runnable{
 		{
 			System.out.println("CLIENT: Initializing socket port 5001");
 			
-			Socket socket = new Socket("localhost", 5001);
+			Socket socket = new Socket(ClientData.serverAddress, 5001);
 			//input stream
 			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			// output stream

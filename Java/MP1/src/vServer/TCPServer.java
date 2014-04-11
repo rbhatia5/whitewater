@@ -32,7 +32,7 @@ public class TCPServer implements Runnable{
 			System.out.printf("SERVER: Server socket initialized %s\n", socket.toString());
 			while(true)
 			{
-				System.out.println("SERVER: Connecting to socket port "+ vServerManager.comPort);
+				System.out.println("SERVER: Connecting to socket port localhost:" + vServerManager.comPort);
 				Socket connectionSocket = socket.accept();
 				System.out.printf("SERVER: Connected to socket %s\n", connectionSocket.toString());
 				BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
@@ -57,8 +57,6 @@ public class TCPServer implements Runnable{
 							msg.setSender("SV00"); 
 							msg.setType(MessageType.RESPONSE); 
 							msg.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
-							
-							
 							outToClient.writeBytes(msg.stringify() + "\n");
 						}
 						catch(JSONException j){
@@ -116,13 +114,13 @@ public class TCPServer implements Runnable{
 		
 		
 		int framerate, width, height;
-		
+		String ip;
 		try {
 			 framerate = (Integer)ServerData.clientMessage.getData(Message.FRAMERATE_KEY);
 			 width = (Integer)ServerData.clientMessage.getData(Message.FRAME_WIDTH_KEY);
 			 height = (Integer)ServerData.clientMessage.getData(Message.FRAME_HEIGHT_KEY);
-			
-			
+			 ip = (String)ServerData.clientMessage.getData(Message.CLIENT_IP_ADDRESS);
+			 ServerData.ipAddress = ip;
 		} catch (JSONException e) {
 			
 			// TODO Auto-generated catch block

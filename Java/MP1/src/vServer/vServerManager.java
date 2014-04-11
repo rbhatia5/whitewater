@@ -27,6 +27,7 @@ public class vServerManager {
 	{	
 		ServerData.mainThread = Thread.currentThread();
 		ServerData.state = ServerData.State.NEGOTIATING;
+		ServerData.setIpAddress("localhost");
 		
 		ServerResource res = ServerResource.getInstance();
 		res.initWithFile("server-resources.txt");
@@ -37,9 +38,9 @@ public class vServerManager {
 		args = Gst.init("Server Pipeline", args);
 		
 		ServerData.mode = ServerData.Mode.SERVER;
-		ServerData.width = 352;
-		ServerData.height = 288;
-		ServerData.framerate = 30;
+		//ServerData.width = 352;
+		//ServerData.height = 288;
+		//ServerData.framerate = 30;
 		
 		ServerPipelineManager.modify_pipeline();
 		

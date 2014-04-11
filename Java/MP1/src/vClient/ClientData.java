@@ -28,8 +28,14 @@ public class ClientData {
 
 
 
+	public static final String serverAddress = "127.0.0.1";
 	
-	
+	public static String getIpAddress() {
+		return ipAddress;
+	}
+	public static void setIpAddress(String ipAddress) {
+		ClientData.ipAddress = ipAddress;
+	}
 	protected static Thread mainThread;
 	protected static State state;
 	protected static Mode mode;
