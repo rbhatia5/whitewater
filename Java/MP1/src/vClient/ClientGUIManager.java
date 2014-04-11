@@ -16,6 +16,8 @@ import javax.swing.JComboBox;
 
 import javax.swing.JPanel;
 
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
@@ -299,8 +301,11 @@ public class ClientGUIManager {
 		String[] frList = {"10"};
 		String[] actpass = {"Active", "Passive"};
 		
+		JLabel activity = new JLabel("Mode");
+		activity.setPreferredSize(new Dimension(150, 30));
+		
 		JComboBox activeOrPassive = new JComboBox(actpass);
-		activeOrPassive.setPreferredSize(new Dimension(80, 30));
+		activeOrPassive.setPreferredSize(new Dimension(150, 30));
 		activeOrPassive.setSelectedIndex(1);
 		activeOrPassive.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e){
@@ -316,11 +321,14 @@ public class ClientGUIManager {
 		ClientData.optionsComponents.add(activeOrPassive);
 		
 		
+	
+		JLabel resLabel = new JLabel("Resolution");
+		resLabel.setPreferredSize(new Dimension(150, 30));
 		//frame rate list picker
 		JComboBox resCB = new JComboBox(resList);
 		//resCB.setPreferredSize(new Dimension(100,50));
 		resCB.setSelectedIndex(0);
-		resCB.setPreferredSize(new Dimension(80,30));
+		resCB.setPreferredSize(new Dimension(150,30));
 		resCB.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
 				JComboBox source = (JComboBox)e.getSource();
@@ -334,13 +342,14 @@ public class ClientGUIManager {
 		
 		ClientData.optionsComponents.add(resCB);
 		
-		
+		JLabel frLabel = new JLabel("Frame Rate");
+		frLabel.setPreferredSize(new Dimension(150, 30));
 		//resolution list picker
 		JComboBox frCB = new JComboBox(frList);
 		//frCB.setPreferredSize(new Dimension(10,10));
 		frCB.setSelectedIndex(0);
 		frCB.setEnabled(false);
-		frCB.setPreferredSize(new Dimension(80,40));
+		frCB.setPreferredSize(new Dimension(150,40));
 		frCB.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
 				
@@ -350,18 +359,36 @@ public class ClientGUIManager {
 					ClientData.frameRate = 10;
 				else
 					ClientData.frameRate = selected+15;
-		
-				System.out.println("User Frame Rate : " + ClientData.frameRate + " selected");
 			}
 		});
 		
 		ClientData.optionsComponents.add(frCB);
+			
+		JButton editResources = new JButton("Edit Resource");
+		editResources.setPreferredSize(new Dimension(150,40));
+		editResources.addActionListener( new ActionListener(){
+				public void actionPerformed(ActionEvent e)
+				{
+					String s = (String)JOptionPane.showInputDialog(
+		                    ClientData.frame,
+		                    "Complete the sentence:\n"
+		                    + "\"Green eggs and...\"",
+		                    "Customized Dialog",
+		                    JOptionPane.PLAIN_MESSAGE
+		                    );
+				}
+		});
+		
+		
+		
 		
 		JPanel userOptions = new JPanel();
-		userOptions.setPreferredSize(new Dimension(100,200));
+		userOptions.setPreferredSize(new Dimension(200,200));
 		userOptions.add(resCB);
 		userOptions.add(frCB);
-		
+		//userOptions.add(activity);
+		userOptions.add(activeOrPassive);
+		userOptions.add(editResources);
 		
 		GroupLayout userOptionsLayout = new GroupLayout(userOptions);
 		userOptionsLayout.setAutoCreateGaps(true);
@@ -369,20 +396,36 @@ public class ClientGUIManager {
 		
 		userOptionsLayout.setHorizontalGroup(
 			userOptionsLayout.createParallelGroup()
+				.addComponent(resLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+	            		  GroupLayout.PREFERRED_SIZE)
 				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+	            		  GroupLayout.PREFERRED_SIZE)
 				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
+	            .addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+	            		  GroupLayout.PREFERRED_SIZE)
 				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
 		);
 		userOptionsLayout.setVerticalGroup(
 			userOptionsLayout.createSequentialGroup()
+				.addComponent(resLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+	            		  GroupLayout.PREFERRED_SIZE)
 				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+	            		  GroupLayout.PREFERRED_SIZE)
 				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
 				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
 		);
 		userOptions.setLayout(userOptionsLayout);
@@ -405,11 +448,11 @@ public class ClientGUIManager {
 		//Monitor data
 		ClientData.monitor = new JTextArea();
 		JScrollPane scrollPane = new JScrollPane(ClientData.monitor);
-		scrollPane.setPreferredSize(new Dimension(130, 200));
+		scrollPane.setPreferredSize(new Dimension(150, 200));
 		ClientData.monitor.setEditable(false);
 		
 		JPanel encOptions = new JPanel();
-		encOptions.setPreferredSize(new Dimension(150,150));
+		encOptions.setPreferredSize(new Dimension(200,150));
 		encOptions.add(userOptions);
 		
 		//define layout
