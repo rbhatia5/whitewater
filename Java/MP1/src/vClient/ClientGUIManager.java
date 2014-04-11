@@ -154,6 +154,7 @@ public class ClientGUIManager {
 				}
 				
 				TCPClient.sendServerMessage(stop);
+				ClientData.state = ClientData.State.NEGOTIATING;
 				
 			}					
 		});

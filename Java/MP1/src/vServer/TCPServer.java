@@ -2,13 +2,14 @@ package vServer;
 
 import java.io.BufferedReader;
 
-
+import org.gstreamer.*;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.gstreamer.Gst;
 import org.gstreamer.State;
 import org.gstreamer.StateChangeReturn;
 import org.json.JSONException;
@@ -64,6 +65,9 @@ public class TCPServer implements Runnable{
 						}
 						
 						ServerData.mainThread.interrupt();
+						
+						
+						
 					}
 					else
 					{
@@ -121,6 +125,9 @@ public class TCPServer implements Runnable{
 			 height = (Integer)ServerData.clientMessage.getData(Message.FRAME_HEIGHT_KEY);
 			 ip = (String)ServerData.clientMessage.getData(Message.CLIENT_IP_ADDRESS);
 			 ServerData.ipAddress = ip;
+			 ServerData.framerate = framerate;
+			 ServerData.width = width;
+			 ServerData.height = height;
 		} catch (JSONException e) {
 			
 			// TODO Auto-generated catch block
@@ -162,6 +169,14 @@ public class TCPServer implements Runnable{
 			else if(action.equals(Message.PAUSE_ACTION))
 			{
 				StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
+				System.out.println(ret.toString());
+			}
+			else if(action.equals(Message.STOP_ACTION))
+			{
+				StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
+				ServerData.state = ServerData.State.NEGOTIATING;
+				Gst.quit();
+				ServerData.state = ServerData.State.NEGOTIATING;
 				System.out.println(ret.toString());
 			}
 			else if(action.equals(Message.FAST_FORWARD_ACTION))
