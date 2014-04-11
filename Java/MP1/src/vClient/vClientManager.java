@@ -19,7 +19,7 @@ public class vClientManager {
 		// create teh client resource singleton
 		ClientResource res = ClientResource.getInstance();
 		res.initWithFile("client-resources.txt");
-		System.out.println("client has " + res.getBandwidth() + " resources");
+		//System.out.println("client has " + res.getBandwidth() + " resources");
 		
 		
 		args = Gst.init("Client Pipeline", args);

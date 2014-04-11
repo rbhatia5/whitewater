@@ -24,7 +24,6 @@ public class TCPServer implements Runnable{
 	public void run() 
 	{
 		String clientString;
-		String serverString;
 		ServerSocket socket = null;
 		
 		try {
@@ -43,6 +42,7 @@ public class TCPServer implements Runnable{
 				ServerData.clientCommand = clientString;
 				try {
 					ServerData.clientMessage = Message.destringify(clientString);
+					System.out.println("Server received Message: " + ServerData.clientMessage.stringify());
 				} catch (JSONException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -54,12 +54,15 @@ public class TCPServer implements Runnable{
 						ServerData.state = ServerData.State.STREAMING;
 						Message msg = new Message();
 						try {
-							msg.setSender("SV00"); msg.setType(MessageType.RESPONSE); msg.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
+							msg.setSender("SV00"); 
+							msg.setType(MessageType.RESPONSE); 
+							msg.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
+							
+							
 							outToClient.writeBytes(msg.stringify() + "\n");
 						}
 						catch(JSONException j){
 							System.err.println("Could not send response to client");
-							
 						}
 						
 						ServerData.mainThread.interrupt();
@@ -69,6 +72,7 @@ public class TCPServer implements Runnable{
 						Message msg = new Message();
 						try {
 							msg.setSender("SV00"); msg.setType(MessageType.RESPONSE); msg.addData(Message.RESULT_KEY, Message.RESULT_REJECT_VALUE);
+							
 							outToClient.writeBytes(msg.stringify() + "\n");
 						}
 						catch(JSONException j){
@@ -90,6 +94,7 @@ public class TCPServer implements Runnable{
 					try {
 						response.setSender("SV00");
 						response.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
+						
 						outToClient.writeBytes(response.stringify() + '\n');
 					} catch(JSONException j)
 					{
@@ -189,47 +194,6 @@ public class TCPServer implements Runnable{
 			System.err.println("Action coudl not be read");
 			e.printStackTrace();
 		}
-		
-		
-		
-		
-		
-
-		/*
-		
-		if(ServerData.clientCommand.contains("play"))
-		{
-			StateChangeReturn ret = ServerData.pipe.setState(State.PLAYING);
-			ServerData.setRate(ServerData.pipe, 1); 
-			System.out.println(ret.toString());
-		}
-		else if(ServerData.clientCommand.contains("pause"))
-		{
-			StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
-			System.out.println(ret.toString());
-		}
-		else if(ServerData.clientCommand.contains("fastforward"))
-		{ 
-			if(ServerData.Rate > 0) {
-				ServerData.setRate(ServerData.pipe, 2 * ServerData.Rate);
-			}
-			else
-			{
-				ServerData.setRate(ServerData.pipe, 1);
-			}
-		}
-		else if(ServerData.clientCommand.contains("rewind"))
-		{
-
-			if(ServerData.Rate < 0)
-				ServerData.setRate(ServerData.pipe, 2 * ServerData.Rate);
-			else if ( ServerData.Rate == 1)
-				ServerData.setRate(ServerData.pipe, -2);
-			else if ( ServerData.Rate > 1)
-				ServerData.setRate(ServerData.pipe, 1);
-
-		}
-	*/
 	}
 	
 }
