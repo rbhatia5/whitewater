@@ -15,30 +15,14 @@ public class vClientManager {
 	
 	public static void main(String[] args)
 	{
+		//Set the client state
 		ClientData.state = ClientData.State.NEGOTIATING;
 		
+		// create teh client resource singleton
 		ClientResource res = ClientResource.getInstance();
 		res.initWithFile("client-resources.txt");
+	
 		
-		
-		
-		
-		System.out.println("Resources are " + res.getBandwidth());
-		
-		
-		File resources = new File("client-resources.txt");
-		try {
-			ClientData.resourcesReader = new BufferedReader(new FileReader(resources));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} 
-		/*
-		try {
-			ClientData.resourcesWriter = new BufferedWriter(new FileWriter(resources));
-		} catch (IOException e) {
-			e.printStackTrace();
-		} 
-		*/
 		args = Gst.init("Client Pipeline", args);
 		
 		ClientData.mode = ClientData.Mode.CLIENT;
@@ -50,7 +34,8 @@ public class vClientManager {
 		//initialize static window reference
 		ClientData.vid_comp = new VideoComponent();
 		ClientData.windowSink = ClientData.vid_comp.getElement();
-			
+		
+		
 		SwingUtilities.invokeLater(new Runnable() 
 		{ 
 			public void run() 
