@@ -59,6 +59,8 @@ public class ClientData {
 	protected static long position;
 	protected static long timeStamp;
 	protected static long encDecTime;
+	protected static String ipAddress;
+	
 	
 	
 	

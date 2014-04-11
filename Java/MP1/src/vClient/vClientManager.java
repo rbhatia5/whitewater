@@ -1,6 +1,9 @@
 package vClient;
 
 import java.awt.*;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+
 import javax.swing.*;
 
 import org.gstreamer.*;
@@ -26,6 +29,13 @@ public class vClientManager {
 		ClientData.FrameRes.setRes("320x240");
 		ClientData.frameRate = 10;
 		ClientData.seek = false;
+		
+		try {
+			ClientData.ipAddress = Inet4Address.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		//initialize static window reference
 		ClientData.vid_comp = new VideoComponent();
