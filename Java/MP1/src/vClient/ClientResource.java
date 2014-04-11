@@ -28,6 +28,8 @@ public class ClientResource {
 		
 	}
 	
+	
+	
 	public static ClientResource getInstance()
 	{
 		if(instance == null)
@@ -35,6 +37,8 @@ public class ClientResource {
 		
 		return instance;
 	}
+	
+
 	
 	public void setResourcePath(String fname)
 	{
@@ -107,6 +111,39 @@ public class ClientResource {
 			e.printStackTrace();
 			bandwidth = -1;
 		}
+	}
+	
+	public void writeToFile()
+	{
+		File resources = new File(filepath);
+		BufferedWriter wtr; 
+		int savedValue = 0; 
+		try {
+			wtr = new BufferedWriter(new FileWriter(resources));
+			//wtr.
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			bandwidth = -1; 
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+			bandwidth = -1;
+		}
+	}
+
+	
+	public String adjustResources(){
+		try {
+		
+		int remainingBandwidth = this.getBandwidth()-ClientData.getProposedBandwidth();
+			
+		return "sdasd";
+			
+		}catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		return "dfdsfDS";
 	}
 	
 	public void initWithFile(String fname)
