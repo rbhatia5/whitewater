@@ -57,9 +57,19 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Negotiating with Server");
-				String properties = Integer.toString(ClientData.frameRate) + " " + ClientData.FrameRes.getWidth() +  " " + ClientData.FrameRes.getHeight();//TCPClient.adjustProperties();
-				properties = TCPClient.negotiateProperties(properties);
-				ClientPipelineManager.modify_pipeline();
+				
+				if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
+				{
+					ClientResource.getInstance().adjustResources(ClientData.getProposedBandwidth());
+					String properties = Integer.toString(ClientData.frameRate) + " " + ClientData.FrameRes.getWidth() +  " " + ClientData.FrameRes.getHeight();
+					properties = TCPClient.negotiateProperties(properties);
+					ClientPipelineManager.modify_pipeline();
+				}
+				else {
+					System.err.println("Client Resource Admission Failed");
+				}
+				
+				
 			}					
 		});
 		

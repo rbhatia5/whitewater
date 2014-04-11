@@ -55,6 +55,7 @@ public class ClientResource {
 	{
 		if(newband >= 0)
 			bandwidth = newband; 
+		writeToFile();
 	}
 	
 	public boolean isValid()
@@ -131,10 +132,17 @@ public class ClientResource {
 	}
 
 	
-	public void adjustResources(){
+	public boolean checkForResource(int requestedBand)
+	{
+		if(requestedBand <= getBandwidth())
+			return true;
+		else
+			return false;
+	}
+	
+	public void adjustResources(int requestedBand){
 
-		
-		int remainingBandwidth = this.getBandwidth()-ClientData.getProposedBandwidth();
+		int remainingBandwidth = this.getBandwidth() - requestedBand;
 		setBandwidth(remainingBandwidth);
 		writeToFile();
 
