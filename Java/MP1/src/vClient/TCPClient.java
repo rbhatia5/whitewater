@@ -68,7 +68,7 @@ public class TCPClient implements Runnable{
 		String resourcesWidth = "";
 		String resourcesHeight = "";
 
-		resourcesFR = Integer.toString(ClientData.frameRate);
+		resourcesFR = ClientData.frameRate;
 		resourcesWidth = ClientData.resolution.split("x")[0];
 		resourcesHeight = ClientData.resolution.split("x")[1];
 		
