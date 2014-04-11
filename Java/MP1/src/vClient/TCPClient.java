@@ -68,14 +68,12 @@ public class TCPClient implements Runnable{
 		String resourcesWidth = "";
 		String resourcesHeight = "";
 
-		try {
-			resourcesFR = ClientData.resourcesReader.readLine();
-			resourcesWidth = ClientData.resourcesReader.readLine();
-			resourcesHeight = ClientData.resourcesReader.readLine();
-			//ClientData.resourcesReader.reset();
-		} catch (IOException e) {
-			System.err.println("Could not read from resources file");
-		}
+		resourcesFR = ClientData.frameRate;
+		resourcesWidth = ClientData.resolution.split("x")[0];
+		resourcesHeight = ClientData.resolution.split("x")[1];
+		
+		
+		
 		if(Integer.parseInt(resourcesFR) < Integer.parseInt(ClientData.frameRate))
 			ClientData.frameRate = resourcesFR;
 		String resolution[] = ClientData.resolution.split("x");
