@@ -371,11 +371,25 @@ public class ClientGUIManager {
 				{
 					String s = (String)JOptionPane.showInputDialog(
 		                    ClientData.frame,
-		                    "Complete the sentence:\n"
-		                    + "\"Green eggs and...\"",
-		                    "Customized Dialog",
-		                    JOptionPane.PLAIN_MESSAGE
+		                    "What would you like the new resources to be?",
+		                    "Modify Resources",
+		                    JOptionPane.PLAIN_MESSAGE,
+		                    null,
+		                    null,
+		                    ClientResource.getInstance().getBandwidth()
 		                    );
+					if(s != null && !s.equals("") )
+					{	
+						try {
+							int newRes = Integer.parseInt(s);
+							ClientResource.getInstance().setBandwidth(newRes);
+						
+						}catch(NumberFormatException n)
+						{
+							// do nothing.
+						}
+					}
+					
 				}
 		});
 		
