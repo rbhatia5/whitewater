@@ -1,6 +1,8 @@
 package vServer;
 
 import java.io.BufferedReader;
+
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,6 +19,7 @@ import vClient.ClientData;
 
 public class TCPServer implements Runnable{
 	
+	
 	public void run() 
 	{
 		String clientString;
@@ -25,11 +28,11 @@ public class TCPServer implements Runnable{
 		
 		try {
 			System.out.println("SERVER: Initializing server socket");
-			socket = new ServerSocket(5000);
+			socket = new ServerSocket(vServerManager.comPort);
 			System.out.printf("SERVER: Server socket initialized %s\n", socket.toString());
 			while(true)
 			{
-				System.out.println("SERVER: Connecting to socket port 5000");
+				System.out.println("SERVER: Connecting to socket port "+ vServerManager.comPort);
 				Socket connectionSocket = socket.accept();
 				System.out.printf("SERVER: Connected to socket %s\n", connectionSocket.toString());
 				BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));

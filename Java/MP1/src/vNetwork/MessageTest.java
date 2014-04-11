@@ -19,6 +19,7 @@ public class MessageTest {
 		test.addData("file", "filename");
 		
 		System.out.println("Input Object: \n" + test.stringify());
+		
 		}catch(JSONException e)
 		{
 			e.printStackTrace();
@@ -28,7 +29,7 @@ public class MessageTest {
 		
 		try {
 			Message received = Message.destringify(test.stringify());
-			System.out.println("Output Object: \n " + received.stringify());
+			System.out.println("Output Object: \n" + received.stringify());
 			
 		} catch (JSONException e) {
 			

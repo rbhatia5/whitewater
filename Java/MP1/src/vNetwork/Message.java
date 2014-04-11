@@ -27,6 +27,7 @@ public class Message {
 		mType = Message.MessageType.NULL;
 		data = new JSONObject();
 	}
+	
 
 	public String stringify() throws JSONException
 	{
@@ -49,8 +50,6 @@ public class Message {
 
 			Message ret = new Message();
 			JSONObject msgObj = new JSONObject(message);
-			
-			System.out.println(msgObj);
 			
 			ret.setSender(msgObj.getString(SENDER_KEY));
 			
@@ -109,7 +108,8 @@ public class Message {
 	
 	public void addData(String key, Object value) throws JSONException
 	{
-		data.put(key, value);
+		if(key != null && value != null)	
+			data.put(key, value);
 	}
 	
 	public Object getData(String key) throws JSONException
