@@ -20,6 +20,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
 import javax.swing.LayoutStyle;
+import javax.swing.MutableComboBoxModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -49,8 +50,8 @@ public class ClientGUIManager {
 				
 				if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
 				{
-					ClientResource.getInstance().adjustResources(ClientData.getProposedBandwidth());
-					String properties = Integer.toString(ClientData.frameRate) + " " + ClientData.FrameRes.getWidth() +  " " + ClientData.FrameRes.getHeight();
+					//ClientResource.getInstance().adjustResources(ClientData.getProposedBandwidth());
+					//String properties = Integer.toString(ClientData.frameRate) + " " + ClientData.FrameRes.getWidth() +  " " + ClientData.FrameRes.getHeight();
 					Message streamRequest = new Message();
 					try {
 					
@@ -198,40 +199,40 @@ public class ClientGUIManager {
 		});
 		
 
-		ClientData.duration = 51;
-		//System.out.println((int)(ClientData.duration/1000000000));
-		ClientData.slider = new JSlider(0,(int)(ClientData.duration/1000000000),0);
-		ClientData.slider.addChangeListener(new ChangeListener(){
-			public void stateChanged(ChangeEvent e) {
-				if(ClientData.seek)
-				{
-					ClientData.pipe.seek(ClientData.slider.getValue(), TimeUnit.SECONDS);
-					ClientData.seek = false;
-				}
-			}
-		});
-		ClientData.slider.addMouseListener(new MouseListener()
-				{
-					public void mouseClicked(MouseEvent e) {
-						ClientData.seek = true;
-					}
-
-					public void mousePressed(MouseEvent e) {
-
-					}
-
-					public void mouseReleased(MouseEvent e) {
-						ClientData.seek = true;
-					}
-
-					public void mouseEntered(MouseEvent e) {
-
-					}
-
-					public void mouseExited(MouseEvent e) {
-					}
-					
-				});
+//		ClientData.duration = 51;
+//		//System.out.println((int)(ClientData.duration/1000000000));
+//		ClientData.slider = new JSlider(0,(int)(ClientData.duration/1000000000),0);
+//		ClientData.slider.addChangeListener(new ChangeListener(){
+//			public void stateChanged(ChangeEvent e) {
+//				if(ClientData.seek)
+//				{
+//					ClientData.pipe.seek(ClientData.slider.getValue(), TimeUnit.SECONDS);
+//					ClientData.seek = false;
+//				}
+//			}
+//		});
+//		ClientData.slider.addMouseListener(new MouseListener()
+//				{
+//					public void mouseClicked(MouseEvent e) {
+//						ClientData.seek = true;
+//					}
+//
+//					public void mousePressed(MouseEvent e) {
+//
+//					}
+//
+//					public void mouseReleased(MouseEvent e) {
+//						ClientData.seek = true;
+//					}
+//
+//					public void mouseEntered(MouseEvent e) {
+//
+//					}
+//
+//					public void mouseExited(MouseEvent e) {
+//					}
+//					
+//				});
 		
 		JPanel controls = new JPanel();
 		controls.add(negotiateButton);
@@ -240,7 +241,7 @@ public class ClientGUIManager {
 		controls.add(stopButton);
 		controls.add(fastForwardButton);
 		controls.add(rewindButton);
-		controls.add(ClientData.slider);
+		//controls.add(ClientData.slider);
 		
 		//add buttons to list
 		ClientData.controlButtons.add(negotiateButton);
@@ -266,7 +267,7 @@ public class ClientGUIManager {
 						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED,
 				         GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 				        .addComponent(negotiateButton)
-					.addComponent(ClientData.slider)
+					//.addComponent(ClientData.slider)
 					)
 		);				
 		layout.setVerticalGroup(
@@ -278,7 +279,7 @@ public class ClientGUIManager {
 					    .addComponent(fastForwardButton)
 					    .addComponent(stopButton)
 					    .addComponent(negotiateButton)
-				    .addComponent(ClientData.slider)
+				    //.addComponent(ClientData.slider)
 					)
 		);
 		controls.setLayout(layout);
@@ -295,13 +296,31 @@ public class ClientGUIManager {
 	protected static JPanel createUserOptionsPanel()	
 	{
 		String[] resList = {"320x240", "640x480"};
-		String[] frList = {"10", "25"};
+		String[] frList = {"10"};
+		String[] actpass = {"Active", "Passive"};
+		
+		JComboBox activeOrPassive = new JComboBox(actpass);
+		activeOrPassive.setPreferredSize(new Dimension(80, 30));
+		activeOrPassive.setSelectedIndex(1);
+		activeOrPassive.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e){
+			JComboBox source = (JComboBox)e.getSource();
+			int selection = source.getSelectedIndex();
+			if(selection == 0)
+				ClientData.setMode(ClientData.Mode.ACTIVE);
+			else
+				ClientData.setMode( ClientData.Mode.PASSIVE);
+			}
+		});
+		
+		ClientData.optionsComponents.add(activeOrPassive);
+		
 		
 		//frame rate list picker
 		JComboBox resCB = new JComboBox(resList);
-		resCB.setPreferredSize(new Dimension(100,50));
+		//resCB.setPreferredSize(new Dimension(100,50));
 		resCB.setSelectedIndex(0);
-		resCB.setPreferredSize(new Dimension(70,30));
+		resCB.setPreferredSize(new Dimension(80,30));
 		resCB.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
 				JComboBox source = (JComboBox)e.getSource();
@@ -312,27 +331,37 @@ public class ClientGUIManager {
 					ClientData.FrameRes.setRes("640x480");
 			}
 		});
+		
+		ClientData.optionsComponents.add(resCB);
+		
+		
 		//resolution list picker
 		JComboBox frCB = new JComboBox(frList);
-		frCB.setPreferredSize(new Dimension(10,10));
+		//frCB.setPreferredSize(new Dimension(10,10));
 		frCB.setSelectedIndex(0);
-		frCB.setPreferredSize(new Dimension(70,30));
+		frCB.setEnabled(false);
+		frCB.setPreferredSize(new Dimension(80,40));
 		frCB.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
+				
 				JComboBox source = (JComboBox)e.getSource();
-				String selected = (String)source.getSelectedItem();
-				if(selected.equals("10"))
-					ClientData.setFrameRate(10);
-				else if(selected.equals("25"))
-					ClientData.setFrameRate(25);
+				int selected = source.getSelectedIndex();
+				if( ClientData.mode == ClientData.mode.PASSIVE)
+					ClientData.frameRate = 10;
+				else
+					ClientData.frameRate = selected+15;
 		
+				System.out.println("User Frame Rate : " + ClientData.frameRate + " selected");
 			}
 		});
 		
+		ClientData.optionsComponents.add(frCB);
+		
 		JPanel userOptions = new JPanel();
-		userOptions.setPreferredSize(new Dimension(100,150));
+		userOptions.setPreferredSize(new Dimension(100,200));
 		userOptions.add(resCB);
 		userOptions.add(frCB);
+		
 		
 		GroupLayout userOptionsLayout = new GroupLayout(userOptions);
 		userOptionsLayout.setAutoCreateGaps(true);
@@ -340,13 +369,21 @@ public class ClientGUIManager {
 		
 		userOptionsLayout.setHorizontalGroup(
 			userOptionsLayout.createParallelGroup()
-				.addComponent(resCB)
-				.addComponent(frCB)
+				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
 		);
 		userOptionsLayout.setVerticalGroup(
 			userOptionsLayout.createSequentialGroup()
-				.addComponent(resCB)
-				.addComponent(frCB)
+				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
 		);
 		userOptions.setLayout(userOptionsLayout);
 		
@@ -368,10 +405,11 @@ public class ClientGUIManager {
 		//Monitor data
 		ClientData.monitor = new JTextArea();
 		JScrollPane scrollPane = new JScrollPane(ClientData.monitor);
+		scrollPane.setPreferredSize(new Dimension(130, 200));
 		ClientData.monitor.setEditable(false);
 		
 		JPanel encOptions = new JPanel();
-
+		encOptions.setPreferredSize(new Dimension(150,150));
 		encOptions.add(userOptions);
 		
 		//define layout
@@ -382,10 +420,12 @@ public class ClientGUIManager {
 		encLayout.setHorizontalGroup(
 				encLayout.createParallelGroup()
 					.addGroup(encLayout.createSequentialGroup()						
-					.addComponent(scrollPane)
+					.addComponent(scrollPane,  GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+					          GroupLayout.PREFERRED_SIZE)
 					)
 					.addGroup(encLayout.createSequentialGroup()						
-					.addComponent(userOptions)
+					.addComponent(userOptions, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+					          GroupLayout.PREFERRED_SIZE)
 					)
 		);
 		encLayout.setVerticalGroup(

@@ -2,6 +2,8 @@ package vClient;
 
 
 import java.util.*;
+
+import vClient.ClientData.Mode;
 import vNetwork.Message;
 
 import javax.swing.*;
@@ -23,31 +25,49 @@ public class ClientData {
 	}
 	
 	protected static final int BYTES_PER_PIXEL = 3;
+
+
+
 	
 	
 	protected static Thread mainThread;
 	protected static State state;
+	protected static Mode mode;
+	
 	protected static String serverResponse;
 	protected static Message serverMessage;
+	
 	protected static Pipeline pipe;
 	protected static AppSink RTCPSink;
+	
 	protected static RTPBin rtpBin;
 	protected static Element windowSink;
+	
 	protected static JFrame frame;
-	protected static Mode mode;
 	protected static VideoComponent vid_comp;
-	protected static int frameRate;
-	protected static String resolution;
 	protected static List<JButton> controlButtons = new ArrayList<JButton>(); 
+	protected static ArrayList<JComponent> optionsComponents = new ArrayList<JComponent>();
 	protected static JPanel controls;
 	protected static JTextArea monitor;
-	protected static JSlider slider;
+	//protected static JSlider slider;
+	
+	protected static int frameRate;
+	protected static String resolution;
 	protected static boolean seek;
 	protected static int rate;
 	protected static long duration;
 	protected static long position;
 	protected static long timeStamp;
 	protected static long encDecTime;
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	public static class FrameRes {
 		private static int width;
@@ -156,6 +176,34 @@ public class ClientData {
 	}
 	public static void setMode(Mode mode) {
 		ClientData.mode = mode;
+		if(mode == Mode.ACTIVE)
+		{
+			
+			// Set framerate to be modifiable
+			JComboBox frCB = (JComboBox)ClientData.optionsComponents.get(2);
+			frCB.setEnabled(true);
+			String[] array = new String[11];
+			
+			for(int i  = 15; i <= 25; i++)
+				array[i-15] = Integer.toString(i);
+		
+			DefaultComboBoxModel dmodel = new DefaultComboBoxModel(array);
+			
+			frCB.setModel(dmodel);
+			frCB.setSelectedIndex(0);
+		
+		}
+		else
+		{
+			//set framerate to be 10
+			JComboBox frCB = (JComboBox)ClientData.optionsComponents.get(2);
+			String[] array = {"10"};
+			DefaultComboBoxModel dmodel = new DefaultComboBoxModel(array);
+			frCB.setModel(dmodel);
+			frCB.setSelectedIndex(0);
+			frCB.setEnabled(false);
+		}
+		
 	}
 	
 	//Videocomp
@@ -212,12 +260,12 @@ public class ClientData {
 	}
 	
 	//Slider
-	public static JSlider getSlider() {
-		return slider;
-	}
-	public static void setSlider(JSlider slider) {
-		ClientData.slider = slider;
-	}
+//	public static JSlider getSlider() {
+//		return slider;
+//	}
+//	public static void setSlider(JSlider slider) {
+//		ClientData.slider = slider;
+//	}
 	
 	//Seek
 	public static boolean isSeek() {
