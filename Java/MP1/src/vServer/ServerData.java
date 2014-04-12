@@ -22,6 +22,14 @@ public class ServerData {
 		NEGOTIATING, STREAMING
 	}
 	
+	protected static final String clientIP = "127.0.0.1";
+	protected final static int comPort = 5001;
+	protected final static int videoRTP = 5002;
+	protected final static int videoRTCPout = 5003;
+	protected final static int videoRTCPin = 5004;
+	protected final static int audioRTP = 5005;
+	protected final static int audioRTCPout = 5006;
+	protected final static int audioRTCPin = 5007;
 	protected static Thread mainThread;
 	protected static State state;
 	protected static Pipeline pipe;
