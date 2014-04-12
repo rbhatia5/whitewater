@@ -26,6 +26,10 @@ public class Message {
 	public static final String RESULT_KEY = "result";
 	public static final String RESULT_ACCEPT_VALUE = "accept";
 	public static final String RESULT_REJECT_VALUE = "reject";
+	public static final String CLIENT_IP_ADDRESS_KEY = "ip-address";
+	public static final String ACTIVITY_KEY = "activity";
+	public static final String ACTIVITY_ACTIVE_VALUE = "active";
+	public static final String ACTIVITY_PASSIVE_VALUE = "passive";
 	
 	
 	

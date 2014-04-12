@@ -125,12 +125,12 @@ public class ServerPipelineManager {
 		Element.linkMany(source, encoder, pay);
 		
 		//Send RTP packets on 5001
-		udpRTPSink.set("host", "127.0.0.1");
+		udpRTPSink.set("host", ServerData.getIpAddress());
 		udpRTPSink.set("port", vServerManager.videoRTP);
 		//Receive RTCP packets on 5003
 		udpRTCPSrc.set("port", vServerManager.videoRTCPin);
 		//Send RTCP packets on 5002
-		udpRTCPSink.set("host", "127.0.0.1");
+		udpRTCPSink.set("host", ServerData.getIpAddress());
 		udpRTCPSink.set("port", vServerManager.videoRTCPout);
 		
 		//Link sometimes pads manually

@@ -57,10 +57,12 @@ public class ClientGUIManager {
 					Message streamRequest = new Message();
 					try {
 					
-						streamRequest.setSender("CL00"); streamRequest.setType(MessageType.REQUEST); 
+						streamRequest.setSender("CL??"); streamRequest.setType(MessageType.REQUEST); 
 						streamRequest.addData(Message.FRAMERATE_KEY, ClientData.frameRate);
 						streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
 						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
+						streamRequest.addData(Message.CLIENT_IP_ADDRESS_KEY, ClientData.ipAddress);
+						streamRequest.addData(Message.ACTIVITY_KEY, ClientData.mode);
 					}catch(JSONException j)
 					{
 						System.err.println("Could not build a stream request");
@@ -112,7 +114,7 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to paused");
-				ClientData.pipe.setState(State.PAUSED);
+				//ClientData.pipe.setState(State.PAUSED);
 				
 				//TCPClient.sendServerMessage("pause");
 				
@@ -153,6 +155,7 @@ public class ClientGUIManager {
 				}
 				
 				TCPClient.sendServerMessage(stop);
+				ClientData.state = ClientData.State.NEGOTIATING;
 				
 			}					
 		});
@@ -371,11 +374,25 @@ public class ClientGUIManager {
 				{
 					String s = (String)JOptionPane.showInputDialog(
 		                    ClientData.frame,
-		                    "Complete the sentence:\n"
-		                    + "\"Green eggs and...\"",
-		                    "Customized Dialog",
-		                    JOptionPane.PLAIN_MESSAGE
+		                    "What would you like the new resources to be?",
+		                    "Modify Resources",
+		                    JOptionPane.PLAIN_MESSAGE,
+		                    null,
+		                    null,
+		                    ClientResource.getInstance().getBandwidth()
 		                    );
+					if(s != null && !s.equals("") )
+					{	
+						try {
+							int newRes = Integer.parseInt(s);
+							ClientResource.getInstance().setBandwidth(newRes);
+						
+						}catch(NumberFormatException n)
+						{
+							// do nothing.
+						}
+					}
+					
 				}
 		});
 		

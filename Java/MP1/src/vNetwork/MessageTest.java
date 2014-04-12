@@ -1,13 +1,17 @@
 package vNetwork;
 
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+
 import org.json.JSONException;
 
 public class MessageTest {
 
 	/**
 	 * @param args
+	 * @throws UnknownHostException 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException {
 		// TODO Auto-generated method stub
 		
 		Message test = new Message();
@@ -30,6 +34,8 @@ public class MessageTest {
 		try {
 			Message received = Message.destringify(test.stringify());
 			System.out.println("Output Object: \n" + received.stringify());
+			
+			System.out.println(Inet4Address.getLocalHost().getHostAddress());
 			
 		} catch (JSONException e) {
 			

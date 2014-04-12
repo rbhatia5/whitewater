@@ -2,13 +2,14 @@ package vServer;
 
 import java.io.BufferedReader;
 
-
+import org.gstreamer.*;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.gstreamer.Gst;
 import org.gstreamer.State;
 import org.gstreamer.StateChangeReturn;
 import org.json.JSONException;
@@ -32,7 +33,7 @@ public class TCPServer implements Runnable{
 			System.out.printf("SERVER: Server socket initialized %s\n", socket.toString());
 			while(true)
 			{
-				System.out.println("SERVER: Connecting to socket port "+ vServerManager.comPort);
+				System.out.println("SERVER: Connecting to socket port localhost:" + vServerManager.comPort);
 				Socket connectionSocket = socket.accept();
 				System.out.printf("SERVER: Connected to socket %s\n", connectionSocket.toString());
 				BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
@@ -57,8 +58,6 @@ public class TCPServer implements Runnable{
 							msg.setSender("SV00"); 
 							msg.setType(MessageType.RESPONSE); 
 							msg.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
-							
-							
 							outToClient.writeBytes(msg.stringify() + "\n");
 						}
 						catch(JSONException j){
@@ -66,6 +65,9 @@ public class TCPServer implements Runnable{
 						}
 						
 						ServerData.mainThread.interrupt();
+						
+						
+						
 					}
 					else
 					{
@@ -116,13 +118,23 @@ public class TCPServer implements Runnable{
 		
 		
 		int framerate, width, height;
-		
+		String ip;
 		try {
 			 framerate = (Integer)ServerData.clientMessage.getData(Message.FRAMERATE_KEY);
 			 width = (Integer)ServerData.clientMessage.getData(Message.FRAME_WIDTH_KEY);
 			 height = (Integer)ServerData.clientMessage.getData(Message.FRAME_HEIGHT_KEY);
-			
-			
+			 ip = (String)ServerData.clientMessage.getData(Message.CLIENT_IP_ADDRESS_KEY);
+			 String activity = (String)ServerData.clientMessage.getData(Message.ACTIVITY_KEY);
+			 
+			 ServerData.ipAddress = ip;
+			 ServerData.framerate = framerate;
+			 ServerData.width = width;
+			 ServerData.height = height;
+			 if(activity.equals(Message.ACTIVITY_ACTIVE_VALUE))
+				 ServerData.activity = "Active";
+			 else
+				 ServerData.activity = "Passive";
+			 
 		} catch (JSONException e) {
 			
 			// TODO Auto-generated catch block
@@ -164,6 +176,13 @@ public class TCPServer implements Runnable{
 			else if(action.equals(Message.PAUSE_ACTION))
 			{
 				StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
+				System.out.println(ret.toString());
+			}
+			else if(action.equals(Message.STOP_ACTION))
+			{
+				StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
+				//Gst.quit();
+				ServerData.state = ServerData.State.NEGOTIATING;
 				System.out.println(ret.toString());
 			}
 			else if(action.equals(Message.FAST_FORWARD_ACTION))

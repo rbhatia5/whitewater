@@ -35,6 +35,18 @@ public class ClientData {
 	protected final static int audioRTCPout = 5006;
 	protected final static int audioRTCPin = 5007;
 
+<<<<<<< HEAD
+=======
+
+	public static final String serverAddress = "127.0.0.1";
+	
+	public static String getIpAddress() {
+		return ipAddress;
+	}
+	public static void setIpAddress(String ipAddress) {
+		ClientData.ipAddress = ipAddress;
+	}
+>>>>>>> 449c2cc4db67ccab578fa7e8d33e2a3bdbd05f21
 	protected static Thread mainThread;
 	protected static State state;
 	protected static Mode mode;
