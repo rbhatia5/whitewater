@@ -91,75 +91,7 @@ public class ClientPipelineManager{
 									 					
 		*/
 		
-		/*
 		
-		//Initialize elements
-		Element udpSrc = ElementFactory.make("udpsrc", "udp-src");
-		ClientData.rtpBin = (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin");
-		Element depay = ElementFactory.make("rtph263depay", "depay");
-		Element decoder = ElementFactory.make("ffdec_h263", "decoder");
-		Element udpSrcRTCP = ElementFactory.make("udpsrc", "udp-src-rtcp");
-		Element udpSinkRTCP = ElementFactory.make("udpsink", "udp-sink-rtcp");
-		//Element teeRTCP = ElementFactory.make("tee", "rtcp-tee");
-		//Element queueRTCP = ElementFactory.make("queue", "rtcp-queue");
-		//Element queueAppSink = ElementFactory.make("queue", "app-sink-queue");
-		//ClientData.RTCPSink = (AppSink)ElementFactory.make("appsink", "rtcp-sink");
-		
-		//Error check
-		//if(udpSrc == null || ClientData.rtpBin == null || depay == null || decoder == null || udpSrcRTCP == null || udpSinkRTCP == null || teeRTCP == null || queueRTCP == null || queueAppSink == null || ClientData.RTCPSink == null)
-		if(udpSrc == null || ClientData.rtpBin == null || depay == null || decoder == null || udpSrcRTCP == null || udpSinkRTCP == null)
-			System.err.println("Could not create all elements");
-	
-		ClientData.pipe.addMany(udpSrc, ClientData.rtpBin, depay, decoder, ClientData.windowSink, udpSrcRTCP, udpSinkRTCP);
-		
-		//Link link-able elements
-		Element.linkMany(udpSrc, ClientData.rtpBin);
-		Element.linkMany(depay, decoder, ClientData.windowSink);
-		//Element.linkMany(udpSrcRTCP, teeRTCP);
-		//Element.linkMany(queueAppSink, ClientData.RTCPSink);
-		
-		//Receive RTP packets on 5001
-		Caps udpCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
-		udpSrc.setCaps(udpCaps);
-		udpSrc.set("port", "5002");
-		//Receive RTCP packets on 5002
-		udpSrcRTCP.set("port", "5003");
-		//Send RTP packets on 5003
-		udpSinkRTCP.set("host",ClientData.serverAddress);
-		udpSinkRTCP.set("port", "5004");
-		
-		//teeRTCP.set("silent", false);
-		//ClientData.RTCPSink.set("emit-signals", true);
-		
-		//Link request pads manually
-		PadLinkReturn ret = null;
-		//Link rtcp source to udpsink
-		Pad send_rtcp_src_0 = ClientData.rtpBin.getRequestPad("send_rtcp_src_0");
-		Pad udpSinkPadRTCP = udpSinkRTCP.getStaticPad("sink");
-		ret = send_rtcp_src_0.link(udpSinkPadRTCP);
-		if(!ret.equals(PadLinkReturn.OK))
-			System.err.printf("Could not link send_rtcp_src_0 to udpsink, %s\n", ret.toString());
-		
-		//Link tee to queues
-		//Pad teeSrcPadRTCP = teeRTCP.getRequestPad("src%d");
-		//Pad teeSrcPadAppSink = teeRTCP.getRequestPad("src%d");
-		//Pad queueSinkPadRTCP = queueRTCP.getStaticPad("sink");
-		//Pad queueSinkPadAppSink = queueAppSink.getStaticPad("sink");
-		//ret = teeSrcPadRTCP.link(queueSinkPadRTCP);
-		//if(!ret.equals(PadLinkReturn.OK))
-		//	System.err.printf("Could not link tee to RTCP queue, %s\n", ret.toString());
-		//ret = teeSrcPadAppSink.link(queueSinkPadAppSink);
-		//if(!ret.equals(PadLinkReturn.OK))
-		//	System.err.printf("Could not link tee to appsink queue, %s\n", ret.toString());
-		
-		//Link queue to rtcp receiver
-		Pad recv_rtcp_sink_0 = ClientData.rtpBin.getRequestPad("recv_rtcp_sink_0");
-		Pad udpSrcPadRTCP = udpSrcRTCP.getStaticPad("src");
-		ret = udpSrcPadRTCP.link(recv_rtcp_sink_0);
-		if(!ret.equals(PadLinkReturn.OK))
-			System.err.printf("Could not link udpsrc to recv_rtcp_sink_0, %s\n", ret.toString());
-			
-			*/
 		
 		//Initialize elements
 				Element udpVideoSrc 		= ElementFactory.make("udpsrc", "udp-video-src");
