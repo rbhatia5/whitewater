@@ -1,6 +1,9 @@
 package vClient;
 
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 
@@ -52,6 +55,8 @@ public class vClientManager {
 				
 				//create encoding options panel
 				JPanel encOptions = ClientGUIManager.createEncodingOptionsPanel();
+				
+				//ClientData.frame.set
 				
 				//Actual top level widget
 				ClientData.frame = new JFrame("vPlayer"); 
