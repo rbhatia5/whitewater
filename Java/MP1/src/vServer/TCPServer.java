@@ -130,7 +130,7 @@ public class TCPServer implements Runnable{
 			 ServerData.framerate = framerate;
 			 ServerData.width = width;
 			 ServerData.height = height;
-			 if(activity.equals(Message.ACTIVITY_ACTIVE_VALUE))
+			 if(activity.equalsIgnoreCase(Message.ACTIVITY_ACTIVE_VALUE))
 				 ServerData.activity = "Active";
 			 else
 				 ServerData.activity = "Passive";
