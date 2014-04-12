@@ -36,6 +36,7 @@ public class ServerData {
 	protected static int framerate;
 	protected static Message clientMessage;
 	protected static String ipAddress;
+	protected static String activity;
 	
 	
 	

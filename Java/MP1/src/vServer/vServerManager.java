@@ -46,7 +46,8 @@ public class vServerManager {
 		
 		ServerData.pipe.setState(State.READY);
 		
-		Gst.main();
+		while(true);
+		//Gst.main();
 	}
 
 }

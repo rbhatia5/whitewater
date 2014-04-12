@@ -61,7 +61,8 @@ public class ClientGUIManager {
 						streamRequest.addData(Message.FRAMERATE_KEY, ClientData.frameRate);
 						streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
 						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
-						streamRequest.addData(Message.CLIENT_IP_ADDRESS, ClientData.ipAddress);
+						streamRequest.addData(Message.CLIENT_IP_ADDRESS_KEY, ClientData.ipAddress);
+						streamRequest.addData(Message.ACTIVITY_KEY, ClientData.mode);
 					}catch(JSONException j)
 					{
 						System.err.println("Could not build a stream request");
@@ -113,7 +114,7 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to paused");
-				ClientData.pipe.setState(State.PAUSED);
+				//ClientData.pipe.setState(State.PAUSED);
 				
 				//TCPClient.sendServerMessage("pause");
 				

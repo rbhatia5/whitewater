@@ -123,11 +123,18 @@ public class TCPServer implements Runnable{
 			 framerate = (Integer)ServerData.clientMessage.getData(Message.FRAMERATE_KEY);
 			 width = (Integer)ServerData.clientMessage.getData(Message.FRAME_WIDTH_KEY);
 			 height = (Integer)ServerData.clientMessage.getData(Message.FRAME_HEIGHT_KEY);
-			 ip = (String)ServerData.clientMessage.getData(Message.CLIENT_IP_ADDRESS);
+			 ip = (String)ServerData.clientMessage.getData(Message.CLIENT_IP_ADDRESS_KEY);
+			 String activity = (String)ServerData.clientMessage.getData(Message.ACTIVITY_KEY);
+			 
 			 ServerData.ipAddress = ip;
 			 ServerData.framerate = framerate;
 			 ServerData.width = width;
 			 ServerData.height = height;
+			 if(activity.equals(Message.ACTIVITY_ACTIVE_VALUE))
+				 ServerData.activity = "Active";
+			 else
+				 ServerData.activity = "Passive";
+			 
 		} catch (JSONException e) {
 			
 			// TODO Auto-generated catch block
@@ -174,8 +181,7 @@ public class TCPServer implements Runnable{
 			else if(action.equals(Message.STOP_ACTION))
 			{
 				StateChangeReturn ret = ServerData.pipe.setState(State.PAUSED);
-				ServerData.state = ServerData.State.NEGOTIATING;
-				Gst.quit();
+				//Gst.quit();
 				ServerData.state = ServerData.State.NEGOTIATING;
 				System.out.println(ret.toString());
 			}
