@@ -1,5 +1,6 @@
 package vServer;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.net.Socket;
 
@@ -10,11 +11,16 @@ public class ServerState {
 	
 	protected HashMap<Socket, ServerSession> client;
 	
+	protected ArrayList<portTuple> portGroup;
+	
 	
 	
 	protected ServerState()
 	{
-		
+		for(int i = 1; i < 20; i++)
+		{
+			portGroup.add(new portTuple(5000 + i, 5000 + 2 * i ));
+		}
 	
 	}
 	
@@ -45,6 +51,18 @@ public class ServerState {
 	{
 		ServerSession sesh = client.get(connection);
 		return sesh;
+	}
+	
+	private class portTuple {
+		int portV, portA;
+		boolean taken = false;
+		
+		portTuple(int a, int b)
+		{
+			portV = a;
+			portA = b;
+			taken = false;
+		}
 	}
 	
 }

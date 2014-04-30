@@ -48,9 +48,11 @@ public class ServerSession extends Session{
 	
 	public void destroy()
 	{
+		//destroy threads
 		net.destroy();
 		gst.destroy();
 		
+		//remove from state
 		ServerState.getInstance().removeServerSession(mySocket);
 		
 		try {
