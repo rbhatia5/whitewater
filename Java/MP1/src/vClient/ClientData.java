@@ -3,7 +3,6 @@ package vClient;
 
 import java.util.*;
 
-import vClient.ClientData.Mode;
 import vNetwork.Message;
 
 import javax.swing.*;
@@ -25,32 +24,13 @@ public class ClientData {
 	}
 	
 	protected static final int BYTES_PER_PIXEL = 3;
-
-	//protected static final String serverIP = "127.0.0.1";
-	protected static int comPort;
-	protected static int videoRTP;
-	protected static int videoRTCPout;
-	protected static int videoRTCPin;
-	protected static int audioRTP;
-	protected static int audioRTCPout;
-	protected static int audioRTCPin;
-
-	protected static String serverAddress = "127.0.0.1";
-
+	
+	protected static GstData[] data = new GstData[2];
+	
 	protected static Thread mainThread;
-	protected static State state;
-	protected static Mode mode;
 	
 	protected static String serverResponse;
 	protected static Message serverMessage;
-	
-	protected static Pipeline pipe;
-	protected static AppSink RTCPSink;
-	
-	protected static RTPBin rtpBin;
-	protected static Element window1;
-	protected static Element window2;
-	
 	protected static JFrame frame;
 	protected static VideoComponent vidComp1;
 	protected static VideoComponent vidComp2;
@@ -127,10 +107,10 @@ public class ClientData {
 	
 	//State
 	public static State getState() {
-		return state;
+		return data[activeWindow].state;
 	}
 	public static void setState(State state) {
-		ClientData.state = state;
+		ClientData.data[activeWindow].state = state;
 	}
 	
 	//serverResponse
@@ -143,34 +123,34 @@ public class ClientData {
 	
 	//Pipe
 	public static Pipeline getPipe() {
-		return pipe;
+		return data[activeWindow].pipe;
 	}
 	public static void setPipe(Pipeline pipe) {
-		ClientData.pipe = pipe;
+		ClientData.data[activeWindow].pipe = pipe;
 	}
 	
 	//Appsink
 	public static AppSink getRTCPSink() {
-		return RTCPSink;
+		return data[activeWindow].RTCPSink;
 	}
 	public static void setRTCPSink(AppSink rTCPSink) {
-		RTCPSink = rTCPSink;
+		data[activeWindow].RTCPSink = rTCPSink;
 	}
 	
 	//RTPBin
 	public static RTPBin getRtpBin() {
-		return rtpBin;
+		return data[activeWindow].rtpBin;
 	}
 	public static void setRtpBin(RTPBin rtpBin) {
-		ClientData.rtpBin = rtpBin;
+		ClientData.data[activeWindow].rtpBin = rtpBin;
 	}
 	
 	//WindowSink
 	public static Element getWindow1() {
-		return window1;
+		return data[activeWindow].windowSink;
 	}
 	public static void setWindow1(Element windowSink) {
-		ClientData.window1 = windowSink;
+		ClientData.data[activeWindow].windowSink = windowSink;
 	}
 	
 	//JFrame
@@ -183,10 +163,10 @@ public class ClientData {
 	
 	//Mode
 	public static Mode getMode() {
-		return mode;
+		return data[activeWindow].mode;
 	}
 	public static void setMode(Mode mode) {
-		ClientData.mode = mode;
+		ClientData.data[activeWindow].mode = mode;
 		if(mode == Mode.ACTIVE)
 		{
 			

@@ -46,13 +46,13 @@ public class TCPClient implements Runnable{
 	{
 		try
 		{
-			System.out.println("CLIENT: Initializing socket port " + ClientData.comPort);
+			System.out.println("CLIENT: Initializing socket port " + ClientData.data[ClientData.activeWindow].comPort);
 			Socket socket = null;
 			while(true)
 			{
 				try
 				{
-					socket = new Socket(ClientData.serverAddress, ClientData.comPort);
+					socket = new Socket(ClientData.data[ClientData.activeWindow].serverAddress, ClientData.data[ClientData.activeWindow].comPort);
 				} catch (ConnectException ignore){};
 				if(socket != null)
 					break;
@@ -72,16 +72,16 @@ public class TCPClient implements Runnable{
 			
 			System.out.printf("Server sent: %s\n", serverString);
 			socket.close();
-			if(ClientData.state.equals(ClientData.State.REQUESTING))
+			if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.REQUESTING))
 			{
 				System.out.println("CLIENT: Beginning negotiation");
-				ClientData.state = ClientData.State.NEGOTIATING;
+				ClientData.data[ClientData.activeWindow].state = ClientData.State.NEGOTIATING;
 				ClientData.mainThread.interrupt();
 			}
-			else if(ClientData.state.equals(ClientData.State.NEGOTIATING))
+			else if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.NEGOTIATING))
 			{
 				System.out.println("CLIENT: Beginning streaming");
-				ClientData.state = ClientData.State.STREAMING;
+				ClientData.data[ClientData.activeWindow].state = ClientData.State.STREAMING;
 				ClientData.mainThread.interrupt();
 			}
 		}
@@ -158,13 +158,7 @@ public class TCPClient implements Runnable{
 		while(!ClientData.mainThread.interrupted());
 		try {
 			Integer serverNumber = (Integer) ClientData.serverMessage.getData(Message.PORT_REQUEST_KEY);  
-			ClientData.comPort = 5001 + (serverNumber-1)*7;
-			ClientData.videoRTP = 5002 + (serverNumber-1)*7;
-			ClientData.videoRTCPout = 5003 + (serverNumber-1)*7;
-			ClientData.videoRTCPin = 5004 + (serverNumber-1)*7;
-			ClientData.audioRTP = 5005 + (serverNumber-1)*7;
-			ClientData.audioRTCPout = 5006 + (serverNumber-1)*7;
-			ClientData.audioRTCPin = 5004 + (serverNumber-1)*7;
+			ClientData.data[ClientData.activeWindow].setPorts(serverNumber);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}

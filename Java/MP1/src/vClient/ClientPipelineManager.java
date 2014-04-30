@@ -6,10 +6,7 @@ import java.nio.ByteBuffer;
 import org.gstreamer.*;
 
 import org.gstreamer.elements.good.RTPBin;
-
-
-
-
+ 
 
 public class ClientPipelineManager{
 
@@ -31,7 +28,7 @@ public class ClientPipelineManager{
 		discard_pipeline();
 		client_pipeline();
 		connect_to_signals();
-		ClientData.pipe.setState(State.READY);
+		ClientData.data[ClientData.activeWindow].pipe.setState(State.READY);
 	}
 
 
@@ -43,14 +40,14 @@ public class ClientPipelineManager{
 	 */
 	protected static void discard_pipeline()
 	{
-		if(ClientData.pipe != null)
+		if(ClientData.data[ClientData.activeWindow].pipe != null)
 		{
 			//need to explicitly remove windowSink
-			ClientData.pipe.setState(State.READY);
-			ClientData.pipe.remove(ClientData.window1);
-			ClientData.pipe.remove(ClientData.RTCPSink);
-			ClientData.RTCPSink = null;
-			ClientData.pipe.setState(State.NULL);
+			ClientData.data[ClientData.activeWindow].pipe.setState(State.READY);
+			ClientData.data[ClientData.activeWindow].pipe.remove(ClientData.data[ClientData.activeWindow].windowSink);
+			ClientData.data[ClientData.activeWindow].pipe.remove(ClientData.data[ClientData.activeWindow].RTCPSink);
+			ClientData.data[ClientData.activeWindow].RTCPSink = null;
+			ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
 		}
 	}
 
@@ -62,7 +59,7 @@ public class ClientPipelineManager{
 	 */
 	protected static void client_pipeline()
 	{
-		ClientData.pipe = new Pipeline("client-pipeline");
+		ClientData.data[ClientData.activeWindow].pipe = new Pipeline("client-pipeline");
 
 		/*
 		_______________	   _____________    ___________________    _______________    ______________    _______________
@@ -94,7 +91,7 @@ public class ClientPipelineManager{
 
 		//Initialize elements
 		Element udpVideoSrc 		= ElementFactory.make("udpsrc", "udp-video-src");
-		ClientData.rtpBin 			= (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin");
+		ClientData.data[ClientData.activeWindow].rtpBin = (RTPBin)ElementFactory.make("gstrtpbin", "rtp-bin");
 		Element videodepay 			= ElementFactory.make("rtph263depay", "video-depay");
 		Element videodecoder 		= ElementFactory.make("ffdec_h263", "video-decoder");
 		Element udpVideoSrcRTCP 	= ElementFactory.make("udpsrc", "udp-video-src-rtcp");
@@ -113,22 +110,22 @@ public class ClientPipelineManager{
 
 		//Error check
 		//if(udpSrc == null || ClientData.rtpBin == null || depay == null || decoder == null || udpSrcRTCP == null || udpSinkRTCP == null || teeRTCP == null || queueRTCP == null || queueAppSink == null || ClientData.RTCPSink == null)
-		if(udpVideoSrc == null || ClientData.rtpBin == null || videodepay == null || videodecoder == null || udpVideoSrcRTCP == null || udpVideoSinkRTCP == null ||
+		if(udpVideoSrc == null || ClientData.data[ClientData.activeWindow].rtpBin == null || videodepay == null || videodecoder == null || udpVideoSrcRTCP == null || udpVideoSinkRTCP == null ||
 				udpAudioSrc == null || audiodepay == null || audiodecoder == null || audiosink == null || udpAudioSrcRTCP == null || udpAudioSinkRTCP == null)
 		{
 			System.err.println("Could not create all elements");
 		}
 
-		if(ClientData.mode == ClientData.Mode.ACTIVE){
+		if(ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.ACTIVE){
 
-			ClientData.pipe.addMany(udpVideoSrc, ClientData.rtpBin, videodepay, videodecoder, ClientData.window1, udpVideoSrcRTCP, udpVideoSinkRTCP, udpAudioSrc, audiodepay, audiodecoder, audiosink, udpAudioSrcRTCP, udpAudioSinkRTCP);
+			ClientData.data[ClientData.activeWindow].pipe.addMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin, videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink, udpVideoSrcRTCP, udpVideoSinkRTCP, udpAudioSrc, audiodepay, audiodecoder, audiosink, udpAudioSrcRTCP, udpAudioSinkRTCP);
 
 			//Link link-able elements
-			if(!Element.linkMany(udpVideoSrc, ClientData.rtpBin))
+			if(!Element.linkMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin))
 				System.err.println("Could not link udp video to rtpbin");
-			if(!Element.linkMany(videodepay, videodecoder, ClientData.window1))
+			if(!Element.linkMany(videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink))
 				System.err.println("Could not link video depay -> video decoder -> window sink");
-			if(!Element.linkMany(udpAudioSrc, ClientData.rtpBin))
+			if(!Element.linkMany(udpAudioSrc, ClientData.data[ClientData.activeWindow].rtpBin))
 				System.err.println("Could not link udp audio to rtpbin");
 			if(!Element.linkMany(audiodepay, audiodecoder, audiosink))
 				System.err.println("Could not link audio depay -> audio decoder -> audio sink");
@@ -137,17 +134,17 @@ public class ClientPipelineManager{
 
 			Caps udpVideoCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
 			udpVideoSrc.setCaps(udpVideoCaps);
-			udpVideoSrc.set("port", ClientData.videoRTP);
-			udpVideoSrcRTCP.set("port", ClientData.videoRTCPin);
-			udpVideoSinkRTCP.set("host", ClientData.serverAddress);
-			udpVideoSinkRTCP.set("port", ClientData.videoRTCPout);
+			udpVideoSrc.set("port", ClientData.data[ClientData.activeWindow].videoRTP);
+			udpVideoSrcRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPin);
+			udpVideoSinkRTCP.set("host", ClientData.data[ClientData.activeWindow].serverAddress);
+			udpVideoSinkRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPout);
 
 			Caps udpAudioCaps = Caps.fromString("application/x-rtp,encoding-name=(string)SPEEX,media=(string)audio,clock-rate=(int)48000,payload=(int)96");
 			udpAudioSrc.setCaps(udpAudioCaps);
-			udpAudioSrc.set("port", ClientData.audioRTP);
-			udpAudioSrcRTCP.set("port", ClientData.audioRTCPin);
-			udpAudioSinkRTCP.set("host", ClientData.serverAddress);
-			udpAudioSinkRTCP.set("port", ClientData.audioRTCPout);
+			udpAudioSrc.set("port", ClientData.data[ClientData.activeWindow].audioRTP);
+			udpAudioSrcRTCP.set("port", ClientData.data[ClientData.activeWindow].audioRTCPin);
+			udpAudioSinkRTCP.set("host", ClientData.data[ClientData.activeWindow].serverAddress);
+			udpAudioSinkRTCP.set("port", ClientData.data[ClientData.activeWindow].audioRTCPout);
 
 
 			//teeRTCP.set("silent", false);
@@ -156,50 +153,50 @@ public class ClientPipelineManager{
 			//Link request pads manually
 			PadLinkReturn ret = null;
 			//Link rtcp source to udpsink
-			Pad send_rtcp_src_0 = ClientData.rtpBin.getRequestPad("send_rtcp_src_0");
+			Pad send_rtcp_src_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("send_rtcp_src_0");
 			Pad udpVideoSinkPadRTCP = udpVideoSinkRTCP.getStaticPad("sink");
 			ret = send_rtcp_src_0.link(udpVideoSinkPadRTCP);
 			if(!ret.equals(PadLinkReturn.OK))
 				System.err.printf("Could not link send_rtcp_src_0 to udpsink, %s\n", ret.toString());
 
 			//Link queue to rtcp receiver
-			Pad recv_rtcp_sink_0 = ClientData.rtpBin.getRequestPad("recv_rtcp_sink_0");
+			Pad recv_rtcp_sink_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("recv_rtcp_sink_0");
 			Pad udpVideoSrcPadRTCP = udpVideoSrcRTCP.getStaticPad("src");
 			ret = udpVideoSrcPadRTCP.link(recv_rtcp_sink_0);
 			if(!ret.equals(PadLinkReturn.OK))
 				System.err.printf("Could not link udpsrc to recv_rtcp_sink_0, %s\n", ret.toString());
 
-			Pad send_rtcp_src_1 = ClientData.rtpBin.getRequestPad("send_rtcp_src_1");
+			Pad send_rtcp_src_1 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("send_rtcp_src_1");
 			Pad udpAudioSinkPadRTCP = udpAudioSinkRTCP.getStaticPad("sink");
 			ret = send_rtcp_src_1.link(udpAudioSinkPadRTCP);
 			if(!ret.equals(PadLinkReturn.OK))
 				System.err.printf("Could not link send_rtcp_src_1 to udpsink, %s\n", ret.toString());
 
 			//Link queue to rtcp receiver
-			Pad recv_rtcp_sink_1 = ClientData.rtpBin.getRequestPad("recv_rtcp_sink_1");
+			Pad recv_rtcp_sink_1 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("recv_rtcp_sink_1");
 			Pad udpAudioSrcPadRTCP = udpAudioSrcRTCP.getStaticPad("src");
 			ret = udpAudioSrcPadRTCP.link(recv_rtcp_sink_1);
 			if(!ret.equals(PadLinkReturn.OK))
 				System.err.printf("Could not link udpsrc to recv_rtcp_sink_1, %s\n", ret.toString());
 		}
-		else if(ClientData.mode == ClientData.Mode.PASSIVE){
+		else if(ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.PASSIVE){
 			
-			ClientData.pipe.addMany(udpVideoSrc, ClientData.rtpBin, videodepay, videodecoder, ClientData.window1, udpVideoSrcRTCP, udpVideoSinkRTCP);
+			ClientData.data[ClientData.activeWindow].pipe.addMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin, videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink, udpVideoSrcRTCP, udpVideoSinkRTCP);
 
 			//Link link-able elements
-			if(!Element.linkMany(udpVideoSrc, ClientData.rtpBin))
+			if(!Element.linkMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin))
 				System.err.println("Could not link udp video to rtpbin");
-			if(!Element.linkMany(videodepay, videodecoder, ClientData.window1))
+			if(!Element.linkMany(videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink))
 				System.err.println("Could not link video depay -> video decoder -> window sink");
 			//Element.linkMany(udpSrcRTCP, teeRTCP);
 			//Element.linkMany(queueAppSink, ClientData.RTCPSink);
 
 			Caps udpVideoCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
 			udpVideoSrc.setCaps(udpVideoCaps);
-			udpVideoSrc.set("port", ClientData.videoRTP);
-			udpVideoSrcRTCP.set("port", ClientData.videoRTCPin);
-			udpVideoSinkRTCP.set("host", ClientData.serverAddress);
-			udpVideoSinkRTCP.set("port", ClientData.videoRTCPout);
+			udpVideoSrc.set("port", ClientData.data[ClientData.activeWindow].videoRTP);
+			udpVideoSrcRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPin);
+			udpVideoSinkRTCP.set("host", ClientData.data[ClientData.activeWindow].serverAddress);
+			udpVideoSinkRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPout);
 
 
 
@@ -209,14 +206,14 @@ public class ClientPipelineManager{
 			//Link request pads manually
 			PadLinkReturn ret = null;
 			//Link rtcp source to udpsink
-			Pad send_rtcp_src_0 = ClientData.rtpBin.getRequestPad("send_rtcp_src_0");
+			Pad send_rtcp_src_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("send_rtcp_src_0");
 			Pad udpVideoSinkPadRTCP = udpVideoSinkRTCP.getStaticPad("sink");
 			ret = send_rtcp_src_0.link(udpVideoSinkPadRTCP);
 			if(!ret.equals(PadLinkReturn.OK))
 				System.err.printf("Could not link send_rtcp_src_0 to udpsink, %s\n", ret.toString());
 
 			//Link queue to rtcp receiver
-			Pad recv_rtcp_sink_0 = ClientData.rtpBin.getRequestPad("recv_rtcp_sink_0");
+			Pad recv_rtcp_sink_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("recv_rtcp_sink_0");
 			Pad udpVideoSrcPadRTCP = udpVideoSrcRTCP.getStaticPad("src");
 			ret = udpVideoSrcPadRTCP.link(recv_rtcp_sink_0);
 			if(!ret.equals(PadLinkReturn.OK))
@@ -246,7 +243,7 @@ public class ClientPipelineManager{
 	protected static void connect_to_signals()
 	{
 		//connect to signal TAG
-		ClientData.pipe.getBus().connect(new Bus.TAG() {
+		ClientData.data[ClientData.activeWindow].pipe.getBus().connect(new Bus.TAG() {
 			public void tagsFound(GstObject source, TagList tagList) {
 				for(String tagName : tagList.getTagNames())
 				{
@@ -260,7 +257,7 @@ public class ClientPipelineManager{
 		});
 
 		//connect to signal EOS
-		ClientData.pipe.getBus().connect(new Bus.EOS() {
+		ClientData.data[ClientData.activeWindow].pipe.getBus().connect(new Bus.EOS() {
 			public void endOfStream(GstObject source) {
 				//exit gracefully
 				System.out.printf("[%s} reached EOS.\n", source);
@@ -269,7 +266,7 @@ public class ClientPipelineManager{
 		});
 
 		//connect to signal ERROR
-		ClientData.pipe.getBus().connect(new Bus.ERROR() {
+		ClientData.data[ClientData.activeWindow].pipe.getBus().connect(new Bus.ERROR() {
 			@Override
 			public void errorMessage(GstObject source, int code, String message) {
 				//print error from message
@@ -279,18 +276,18 @@ public class ClientPipelineManager{
 		});
 
 		//connect to change of state
-		ClientData.pipe.getBus().connect(new Bus.STATE_CHANGED() {
+		ClientData.data[ClientData.activeWindow].pipe.getBus().connect(new Bus.STATE_CHANGED() {
 			public void stateChanged(GstObject source, State oldstate, State newstate, State pending) {
-				if(source.equals(ClientData.pipe))
+				if(source.equals(ClientData.data[ClientData.activeWindow].pipe))
 				{
 					System.out.printf("[%s] changed state from %s to %s\n", source.getName(), oldstate.toString(), newstate.toString());
 				}
-				else if(source.equals(ClientData.RTCPSink))
+				else if(source.equals(ClientData.data[ClientData.activeWindow].RTCPSink))
 				{
 					if(newstate.equals(State.PLAYING))
-						ClientData.pipe.setState(State.PLAYING);
+						ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
 					else if(newstate.equals(State.PAUSED))
-						ClientData.pipe.setState(State.PAUSED);
+						ClientData.data[ClientData.activeWindow].pipe.setState(State.PAUSED);
 				}
 			}
 		});
@@ -306,12 +303,12 @@ public class ClientPipelineManager{
 		 */
 
 		//Link sometimes pads on RTPBin
-		ClientData.rtpBin.connect(new Element.PAD_ADDED() {
+		ClientData.data[ClientData.activeWindow].rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
 				System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
 				if(newPad.getName().contains("recv_rtp_src_0"))
 				{
-					Pad depaySink = ClientData.pipe.getElementByName("video-depay").getStaticPad("sink");
+					Pad depaySink = ClientData.data[ClientData.activeWindow].pipe.getElementByName("video-depay").getStaticPad("sink");
 					if(!depaySink.isLinked())
 					{
 						newPad.link(depaySink);
@@ -320,12 +317,12 @@ public class ClientPipelineManager{
 			}
 		});
 
-		ClientData.rtpBin.connect(new Element.PAD_ADDED() {
+		ClientData.data[ClientData.activeWindow].rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
 				System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
 				if(newPad.getName().contains("recv_rtp_src_1"))
 				{
-					Pad depaySink = ClientData.pipe.getElementByName("audio-depay").getStaticPad("sink");
+					Pad depaySink = ClientData.data[ClientData.activeWindow].pipe.getElementByName("audio-depay").getStaticPad("sink");
 					if(!depaySink.isLinked())
 					{
 						newPad.link(depaySink);
@@ -335,7 +332,7 @@ public class ClientPipelineManager{
 		});
 
 		//For fetching RTCP packets
-		ClientData.rtpBin.connect(new RTPBin.ON_NEW_SSRC() {
+		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_NEW_SSRC() {
 			public void onNewSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
 				//System.out.printf("1 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
 				//Pointer session = new Pointer(sessionid);
@@ -347,19 +344,19 @@ public class ClientPipelineManager{
 			}
 		});
 
-		ClientData.rtpBin.connect(new RTPBin.ON_SSRC_SDES() {
+		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_SSRC_SDES() {
 			public void onSsrcSdes(RTPBin rtpBin, int sessionid, int ssrc) {
 				//System.out.printf("2 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
 			}
 		});
 
-		ClientData.rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
+		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
 			public void onSsrcActive(RTPBin rtpBin, int sessionid, int ssrc) {
 				//System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
 			}
 		});
 
-		ClientData.rtpBin.connect(new RTPBin.ON_BYE_SSRC() {
+		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_BYE_SSRC() {
 			public void onByeSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
 				System.out.printf("4 : RTCP packet received BYE from ssrc: %s session: %s\n", ssrc, sessionid);
 			}

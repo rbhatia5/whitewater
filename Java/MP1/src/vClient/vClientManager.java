@@ -1,9 +1,6 @@
 package vClient;
 
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 
@@ -16,8 +13,14 @@ public class vClientManager {
 	
 	public static void main(String[] args)
 	{
+		ClientData.activeWindow = 0;
+		ClientData.data[0] = new GstData();
+		ClientData.data[1] = new GstData();
 		//Set the client state
-		ClientData.state = ClientData.State.REQUESTING;
+		ClientData.data[0].state = ClientData.State.REQUESTING;
+		ClientData.data[1].state = ClientData.State.REQUESTING;
+		ClientData.data[0].mode = ClientData.Mode.PASSIVE;
+		ClientData.data[1].mode = ClientData.Mode.PASSIVE;
 		
 		// create the client resource singleton
 		ClientResource res = ClientResource.getInstance();
@@ -26,7 +29,6 @@ public class vClientManager {
 		
 		args = Gst.init("Client Pipeline", args);
 		
-		ClientData.mode = ClientData.Mode.PASSIVE;
 		
 		ClientData.FrameRes.setRes("320x240");
 		ClientData.frameRate = 10;
@@ -41,9 +43,9 @@ public class vClientManager {
 		
 		//initialize static window reference
 		ClientData.vidComp1 = new VideoComponent();
-		ClientData.window1 = ClientData.vidComp1.getElement();
+		ClientData.data[0].windowSink = ClientData.vidComp1.getElement();
 		ClientData.vidComp2 = new VideoComponent();
-		ClientData.window2 = ClientData.vidComp2.getElement();
+		ClientData.data[1].windowSink = ClientData.vidComp2.getElement();
 		
 		SwingUtilities.invokeLater(new Runnable() 
 		{ 

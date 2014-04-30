@@ -34,7 +34,7 @@ public class ClientGUIManager {
 				{
 					//first request ports, then negotiate properties
 					System.out.println("CLIENT: Requesting Server");
-					ClientData.comPort = 5000;
+					ClientData.data[ClientData.activeWindow].comPort = 5000;
 					Message portRequest = new Message();
 					portRequest.setSender("CL??"); 
 					portRequest.setType(MessageType.NEW);
@@ -49,7 +49,7 @@ public class ClientGUIManager {
 						streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
 						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
 						streamRequest.addData(Message.CLIENT_IP_ADDRESS_KEY, ClientData.ipAddress);
-						streamRequest.addData(Message.ACTIVITY_KEY, ClientData.mode);
+						streamRequest.addData(Message.ACTIVITY_KEY, ClientData.data[ClientData.activeWindow].mode);
 					}catch(JSONException j)
 					{
 						System.err.println("Could not build a stream request");
@@ -73,7 +73,7 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to playing");
-				ClientData.pipe.setState(State.PLAYING);
+				ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
 				//ClientData.appSink.setState(State.PLAYING);
 				ClientData.rate = 1;
 				
@@ -123,7 +123,7 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to ready");
-				ClientData.pipe.setState(State.READY);
+				ClientData.data[ClientData.activeWindow].pipe.setState(State.READY);
 				
 				//TCPClient.sendServerMessage("stop");
 				
@@ -139,7 +139,7 @@ public class ClientGUIManager {
 				}
 				
 				TCPClient.sendServerMessage(stop);
-				ClientData.state = ClientData.State.NEGOTIATING;
+				ClientData.data[ClientData.activeWindow].state = ClientData.State.NEGOTIATING;
 				
 			}					
 		});
@@ -292,7 +292,7 @@ public class ClientGUIManager {
 		serverIPField.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
 				JTextField source = (JTextField) e.getSource();
-				ClientData.serverAddress = source.getText();
+				ClientData.data[ClientData.activeWindow].serverAddress = source.getText();
 			}
 		});
 		
@@ -354,7 +354,7 @@ public class ClientGUIManager {
 				
 				JComboBox source = (JComboBox)e.getSource();
 				int selected = source.getSelectedIndex();
-				if( ClientData.mode == ClientData.mode.PASSIVE)
+				if( ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.PASSIVE)
 					ClientData.frameRate = 10;
 				else
 					ClientData.frameRate = selected+15;
@@ -521,13 +521,13 @@ public class ClientGUIManager {
 		JRadioButton window1Button = new JRadioButton("1");
 		window1Button.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				ClientData.activeWindow = 1;
+				ClientData.activeWindow = 0;
 			}
 		});
 		JRadioButton window2Button = new JRadioButton("2");
-		window1Button.addActionListener(new ActionListener(){
+		window2Button.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				ClientData.activeWindow = 2;
+				ClientData.activeWindow = 1;
 			}
 		});
 		
