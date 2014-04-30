@@ -21,29 +21,21 @@ public class ClientData {
 	}
 	
 	public enum State {
-		NEGOTIATING, STREAMING
+		REQUESTING, NEGOTIATING, STREAMING
 	}
 	
 	protected static final int BYTES_PER_PIXEL = 3;
 
 	//protected static final String serverIP = "127.0.0.1";
-	protected final static int comPort = 5001;
-	protected final static int videoRTP = 5002;
-	protected final static int videoRTCPout = 5003;
-	protected final static int videoRTCPin = 5004;
-	protected final static int audioRTP = 5005;
-	protected final static int audioRTCPout = 5006;
-	protected final static int audioRTCPin = 5007;
+	protected static int comPort;
+	protected static int videoRTP;
+	protected static int videoRTCPout;
+	protected static int videoRTCPin;
+	protected static int audioRTP;
+	protected static int audioRTCPout;
+	protected static int audioRTCPin;
 
-
-	public static final String serverAddress = "127.0.0.1";
-	
-	public static String getIpAddress() {
-		return ipAddress;
-	}
-	public static void setIpAddress(String ipAddress) {
-		ClientData.ipAddress = ipAddress;
-	}
+	protected static String serverAddress = "127.0.0.1";
 
 	protected static Thread mainThread;
 	protected static State state;
@@ -56,14 +48,17 @@ public class ClientData {
 	protected static AppSink RTCPSink;
 	
 	protected static RTPBin rtpBin;
-	protected static Element windowSink;
+	protected static Element window1;
+	protected static Element window2;
 	
 	protected static JFrame frame;
-	protected static VideoComponent vid_comp;
+	protected static VideoComponent vidComp1;
+	protected static VideoComponent vidComp2;
 	protected static List<JButton> controlButtons = new ArrayList<JButton>(); 
 	protected static ArrayList<JComponent> optionsComponents = new ArrayList<JComponent>();
 	protected static JPanel controls;
 	protected static JTextArea monitor;
+	protected static int activeWindow;
 	//protected static JSlider slider;
 	
 	protected static int frameRate;
@@ -78,13 +73,12 @@ public class ClientData {
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
+	public static String getIpAddress() {
+		return ipAddress;
+	}
+	public static void setIpAddress(String ipAddress) {
+		ClientData.ipAddress = ipAddress;
+	}
 	
 	public static class FrameRes {
 		private static int width;
@@ -172,11 +166,11 @@ public class ClientData {
 	}
 	
 	//WindowSink
-	public static Element getWindowSink() {
-		return windowSink;
+	public static Element getWindow1() {
+		return window1;
 	}
-	public static void setWindowSink(Element windowSink) {
-		ClientData.windowSink = windowSink;
+	public static void setWindow1(Element windowSink) {
+		ClientData.window1 = windowSink;
 	}
 	
 	//JFrame
@@ -224,11 +218,11 @@ public class ClientData {
 	}
 	
 	//Videocomp
-	public static VideoComponent getVid_comp() {
-		return vid_comp;
+	public static VideoComponent getVid_comp1() {
+		return vidComp1;
 	}
-	public static void setVid_comp(VideoComponent vid_comp) {
-		ClientData.vid_comp = vid_comp;
+	public static void setVid_comp1(VideoComponent vid_comp) {
+		ClientData.vidComp1 = vid_comp;
 	}
 	
 	//FrameRate

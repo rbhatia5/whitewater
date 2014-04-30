@@ -9,11 +9,9 @@ import vNetwork.Message;
 
 public class TCPClient implements Runnable{
 
-	private String message;
-	private Message msg;
+	protected String message;
+	protected Message msg;
 	
-	
-
 	/**
 	 * Author:
 	 * Purpose:
@@ -38,6 +36,7 @@ public class TCPClient implements Runnable{
 	{
 		this.message = message;
 	}
+	
 	TCPClient(Message msg)
 	{
 		this.msg = msg;
@@ -47,14 +46,22 @@ public class TCPClient implements Runnable{
 	{
 		try
 		{
-			System.out.println("CLIENT: Initializing socket port 5001");
+			System.out.println("CLIENT: Initializing socket port " + ClientData.comPort);
+			Socket socket = null;
+			while(true)
+			{
+				try
+				{
+					socket = new Socket(ClientData.serverAddress, ClientData.comPort);
+				} catch (ConnectException ignore){};
+				if(socket != null)
+					break;
+			}
 			
-			Socket socket = new Socket(ClientData.serverAddress, 5001);
-			//input stream
 			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			// output stream
 			DataOutputStream outToServer = new DataOutputStream(socket.getOutputStream());
 			System.out.println("CLIENT: Writing to socket");
+			System.out.println("CLIENT: Writing " + msg.stringify());
 			outToServer.writeBytes(msg.stringify() + "\n");
 			
 			System.out.println("CLIENT: Reading from socket");
@@ -65,8 +72,15 @@ public class TCPClient implements Runnable{
 			
 			System.out.printf("Server sent: %s\n", serverString);
 			socket.close();
-			if(ClientData.state.equals(ClientData.State.NEGOTIATING))
+			if(ClientData.state.equals(ClientData.State.REQUESTING))
 			{
+				System.out.println("CLIENT: Beginning negotiation");
+				ClientData.state = ClientData.State.NEGOTIATING;
+				ClientData.mainThread.interrupt();
+			}
+			else if(ClientData.state.equals(ClientData.State.NEGOTIATING))
+			{
+				System.out.println("CLIENT: Beginning streaming");
 				ClientData.state = ClientData.State.STREAMING;
 				ClientData.mainThread.interrupt();
 			}
@@ -138,4 +152,21 @@ public class TCPClient implements Runnable{
 		
 	}
 	
+	public static void requestPort(Message portRequest)
+	{
+		TCPClient.sendServerMessage(portRequest);
+		while(!ClientData.mainThread.interrupted());
+		try {
+			Integer serverNumber = (Integer) ClientData.serverMessage.getData(Message.PORT_REQUEST_KEY);  
+			ClientData.comPort = 5001 + (serverNumber-1)*7;
+			ClientData.videoRTP = 5002 + (serverNumber-1)*7;
+			ClientData.videoRTCPout = 5003 + (serverNumber-1)*7;
+			ClientData.videoRTCPin = 5004 + (serverNumber-1)*7;
+			ClientData.audioRTP = 5005 + (serverNumber-1)*7;
+			ClientData.audioRTCPout = 5006 + (serverNumber-1)*7;
+			ClientData.audioRTCPin = 5004 + (serverNumber-1)*7;
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
 }

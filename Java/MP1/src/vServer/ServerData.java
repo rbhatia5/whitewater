@@ -13,6 +13,17 @@ import vNetwork.Message;
 
 public class ServerData {
 
+	ServerData(int serverNumber)
+	{
+		comPort = 5001 + (serverNumber-1)*7;
+		videoRTP = 5002 + (serverNumber-1)*7;
+		videoRTCPout = 5003 + (serverNumber-1)*7;
+		videoRTCPin = 5004 + (serverNumber-1)*7;
+		audioRTP = 5005 + (serverNumber-1)*7;
+		audioRTCPout = 5006 + (serverNumber-1)*7;
+		audioRTCPin = 5004 + (serverNumber-1)*7;
+	}
+	
 	public enum Mode
 	{
 		SERVER
@@ -22,58 +33,47 @@ public class ServerData {
 		NEGOTIATING, STREAMING
 	}
 	
-	protected static final String clientIP = "127.0.0.1";
-	protected final static int comPort = 5001;
-	protected final static int videoRTP = 5002;
-	protected final static int videoRTCPout = 5003;
-	protected final static int videoRTCPin = 5004;
-	protected final static int audioRTP = 5005;
-	protected final static int audioRTCPout = 5006;
-	protected final static int audioRTCPin = 5007;
-	protected static Thread mainThread;
-	protected static State state;
-	protected static Pipeline pipe;
-	protected static int Rate; 
-	protected static RTPBin rtpBin;
-	protected static String clientCommand;
-	protected static Mode mode;
-	protected static BufferedReader resourcesReader;
-	protected static BufferedWriter resourcesWriter;
-	protected static int width;
-	protected static int height;
-	protected static int framerate;
-	protected static Message clientMessage;
-	protected static String ipAddress;
-	protected static String activity;
+	protected String clientIP = "127.0.0.1";
+	protected int comPort;
+	protected int videoRTP;
+	protected int videoRTCPout;
+	protected int videoRTCPin;
+	protected int audioRTP;
+	protected int audioRTCPout;
+	protected int audioRTCPin;
+	protected Thread mainThread;
+	protected State state;
+	protected Pipeline pipe;
+	protected int Rate; 
+	protected RTPBin rtpBin;
+	protected String clientCommand;
+	protected Mode mode;
+	protected BufferedReader resourcesReader;
+	protected BufferedWriter resourcesWriter;
+	protected int width;
+	protected int height;
+	protected int framerate;
+	protected Message clientMessage;
+	protected String ipAddress;
+	protected String activity;
 	
-	
-	
-	
-	public static String getIpAddress() {
+	public String getIpAddress() {
 		return ipAddress;
 	}
 
-
-
-
-	public static void setIpAddress(String ipAddress) {
-		ServerData.ipAddress = ipAddress;
+	public void setIpAddress(String ipAddress) {
+		this.ipAddress = ipAddress;
 	}
 
-
-
-
-	protected static void setRate(Pipeline pipe, int rate)
+	protected void setRate(Pipeline pipe, int rate)
 	{
 		Format format = org.gstreamer.Format.TIME;
 		
 		int flags = SeekFlags.ACCURATE | SeekFlags.FLUSH;
 		
-		ServerData.Rate = rate;
+		Rate = rate;
 		System.out.println("Rate is now: " + rate);
 		pipe.seek(rate, format, flags, org.gstreamer.SeekType.NONE, 0, org.gstreamer.SeekType.NONE, 0);
 	}
-
-
 
 }

@@ -1,53 +1,41 @@
 package vServer;
 
-
-import java.io.*;
-
-
 import org.gstreamer.*;
 
-
-//import vServer.*;
-
-public class vServerManager {
+public class vServerManager implements Runnable {
 	
-	public final static int comPort = 5001;
-	public final static int videoRTP = 5002;
-	public final static int videoRTCPin = 5003;
-	public final static int videoRTCPout = 5004;
+	protected static ServerData data;
 	
-	
-	public static void initializeTCPServer()
+	vServerManager(int serverNumber)
 	{
-		TCPServer server = new TCPServer();
-		new Thread(server).start();
+		data = new ServerData(serverNumber);
 	}
 	
-	public static void main(String[] args)
-	{	
-		ServerData.mainThread = Thread.currentThread();
-		ServerData.state = ServerData.State.NEGOTIATING;
-		ServerData.setIpAddress("localhost");
+	public void initializeTCPServer(int port, TCPServer.TYPE type)
+	{
+		TCPServer server = new TCPServer(port, type);
+		new Thread(server).start();
+	}
+
+	public void run() {
+		
+		data.mainThread = Thread.currentThread();
+		data.state = ServerData.State.NEGOTIATING;
+		data.setIpAddress("localhost");
 		
 		ServerResource res = ServerResource.getInstance();
 		res.initWithFile("server-resources.txt");
+	
+		initializeTCPServer(data.comPort, TCPServer.TYPE.CONTROL);
 		
-		initializeTCPServer();
-		while(!ServerData.mainThread.interrupted());
-		
-		args = Gst.init("Server Pipeline", args);
-		
-		ServerData.mode = ServerData.Mode.SERVER;
-		//ServerData.width = 352;
-		//ServerData.height = 288;
-		//ServerData.framerate = 30;
-		
+		while(!data.mainThread.interrupted());
+		String[] args = new String[0];
+		Gst.init("Server Pipeline", args);
+		data.mode = ServerData.Mode.SERVER;
 		ServerPipelineManager.modify_pipeline();
+		data.pipe.setState(State.READY);
 		
-		ServerData.pipe.setState(State.READY);
-		
-		while(true);
-		//Gst.main();
+		Gst.main();
 	}
 
 }

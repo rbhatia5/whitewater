@@ -1,30 +1,11 @@
 package vClient;
 
 import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
-import java.util.concurrent.TimeUnit;
-
-
-import javax.swing.GroupLayout;
-
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-
-import javax.swing.JPanel;
-
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JSlider;
-import javax.swing.JTextArea;
-import javax.swing.LayoutStyle;
-import javax.swing.MutableComboBoxModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
+import javax.swing.*;
 
 import vNetwork.Message;
 import vNetwork.Message.MessageType;
@@ -44,20 +25,26 @@ public class ClientGUIManager {
 	 */
 	protected static JPanel createControlPanel()
 	{
-		JButton negotiateButton = new JButton("Negotiate");
+		JButton negotiateButton = new JButton("Connect");
 		negotiateButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				System.out.println("Negotiating with Server");
 				
 				if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
 				{
-					//ClientResource.getInstance().adjustResources(ClientData.getProposedBandwidth());
-					//String properties = Integer.toString(ClientData.frameRate) + " " + ClientData.FrameRes.getWidth() +  " " + ClientData.FrameRes.getHeight();
+					//first request ports, then negotiate properties
+					System.out.println("CLIENT: Requesting Server");
+					ClientData.comPort = 5000;
+					Message portRequest = new Message();
+					portRequest.setSender("CL??"); 
+					portRequest.setType(MessageType.NEW);
+					TCPClient.requestPort(portRequest);
+					
+					System.out.println("CLIENT: Negotiating with Server");
 					Message streamRequest = new Message();
 					try {
-					
-						streamRequest.setSender("CL??"); streamRequest.setType(MessageType.REQUEST); 
+						streamRequest.setSender("CL??"); 
+						streamRequest.setType(MessageType.REQUEST); 
 						streamRequest.addData(Message.FRAMERATE_KEY, ClientData.frameRate);
 						streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
 						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
@@ -90,8 +77,6 @@ public class ClientGUIManager {
 				//ClientData.appSink.setState(State.PLAYING);
 				ClientData.rate = 1;
 				
-				//TCPClient.sendServerMessage("play");
-				
 				Message play = new Message(MessageType.CONTROL);
 				
 				try {
@@ -99,7 +84,6 @@ public class ClientGUIManager {
 					play.addData(Message.ACTION_KEY, Message.PLAY_ACTION);
 					
 				} catch (JSONException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 				
@@ -304,6 +288,18 @@ public class ClientGUIManager {
 		String[] frList = {"10"};
 		String[] actpass = {"Active", "Passive"};
 		
+		JTextField serverIPField = new JTextField("Enter server IP address");
+		serverIPField.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				JTextField source = (JTextField) e.getSource();
+				ClientData.serverAddress = source.getText();
+			}
+		});
+		
+		ClientData.optionsComponents.add(serverIPField);
+		
+		
+		
 		JLabel activity = new JLabel("Mode");
 		activity.setPreferredSize(new Dimension(150, 30));
 		
@@ -396,9 +392,6 @@ public class ClientGUIManager {
 				}
 		});
 		
-		
-		
-		
 		JPanel userOptions = new JPanel();
 		userOptions.setPreferredSize(new Dimension(200,200));
 		userOptions.add(resCB);
@@ -427,6 +420,8 @@ public class ClientGUIManager {
 				          GroupLayout.PREFERRED_SIZE)
 				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)
 		);
 		userOptionsLayout.setVerticalGroup(
 			userOptionsLayout.createSequentialGroup()
@@ -444,6 +439,8 @@ public class ClientGUIManager {
 				          GroupLayout.PREFERRED_SIZE)
 				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 				          GroupLayout.PREFERRED_SIZE)
+				.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				          GroupLayout.PREFERRED_SIZE)          
 		);
 		userOptions.setLayout(userOptionsLayout);
 		
@@ -499,5 +496,49 @@ public class ClientGUIManager {
 		);
 		encOptions.setLayout(encLayout);
 		return encOptions;
+	}
+	
+	protected static JPanel createWindowsPanel()
+	{
+		GridLayout windowLayout = new GridLayout(1,2,5,0);
+		
+		JPanel windowsPanel = new JPanel();
+		windowsPanel.setLayout(windowLayout);
+		windowsPanel.add(ClientData.vidComp1);
+		ClientData.vidComp1.setPreferredSize(new Dimension(640, 480)); 
+		windowsPanel.add(ClientData.vidComp2);
+		ClientData.vidComp2.setPreferredSize(new Dimension(640, 480));
+		return windowsPanel;
+	}
+	
+	
+	protected static JPanel createWindowPicker()
+	{
+		JPanel windowPicker = new JPanel();
+		windowPicker.setLayout(new GridLayout(1,2,20,0));
+		
+		ButtonGroup buttonGroup = new ButtonGroup();
+		JRadioButton window1Button = new JRadioButton("1");
+		window1Button.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				ClientData.activeWindow = 1;
+			}
+		});
+		JRadioButton window2Button = new JRadioButton("2");
+		window1Button.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				ClientData.activeWindow = 2;
+			}
+		});
+		
+		buttonGroup.add(window1Button);
+		buttonGroup.add(window2Button);
+		
+		windowPicker.add(window1Button);
+		windowPicker.add(window2Button);
+		
+		window1Button.doClick();
+		
+		return windowPicker;
 	}
 }

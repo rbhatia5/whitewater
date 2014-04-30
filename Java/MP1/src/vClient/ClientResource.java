@@ -27,9 +27,6 @@ public class ClientResource {
 	{
 		
 	}
-	
-	
-	
 	public static ClientResource getInstance()
 	{
 		if(instance == null)
@@ -38,14 +35,11 @@ public class ClientResource {
 		return instance;
 	}
 	
-
-	
 	public void setResourcePath(String fname)
 	{
 		filepath = fname;
 	}
 	
-
 	public int getBandwidth()
 	{
 		return bandwidth; 
@@ -65,6 +59,7 @@ public class ClientResource {
 		else
 			return false;
 	}
+	
 	public int saveToFile()
 	{
 		if(filepath == null) {

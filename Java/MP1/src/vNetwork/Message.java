@@ -10,7 +10,6 @@ public class Message {
 	private final static String MESSAGE_TYPE_KEY = "message-type";
 	private final static String DATA_KEY = "data";
 	
-	
 	//Stream Request Keys
 	public final static String FRAMERATE_KEY = "frame-rate";
 	public final static String FRAME_WIDTH_KEY = "frame-width";
@@ -30,11 +29,11 @@ public class Message {
 	public static final String ACTIVITY_KEY = "activity";
 	public static final String ACTIVITY_ACTIVE_VALUE = "active";
 	public static final String ACTIVITY_PASSIVE_VALUE = "passive";
-	
+	public final static String PORT_REQUEST_KEY = "port";
 	
 	
 	public enum MessageType {
-		REQUEST, CONTROL, RESPONSE, NULL
+		NEW, REQUEST, CONTROL, RESPONSE, NULL
 	}
 	
 	private String sender; 
@@ -66,13 +65,12 @@ public class Message {
 		
 		JSONObject messageObject;
 	
-			messageObject = new JSONObject();
-			messageObject.put(SENDER_KEY, this.sender);
-			messageObject.put(MESSAGE_TYPE_KEY, this.mType);
-			messageObject.put(DATA_KEY, this.data);
-			
-			return messageObject.toString();
-			
+		messageObject = new JSONObject();
+		messageObject.put(SENDER_KEY, this.sender);
+		messageObject.put(MESSAGE_TYPE_KEY, this.mType);
+		messageObject.put(DATA_KEY, this.data);
+		
+		return messageObject.toString();
 	}
 	
 	public static Message destringify(String message) throws JSONException
@@ -81,11 +79,8 @@ public class Message {
 				return  new Message();
 			Message ret = new Message();
 			JSONObject msgObj = new JSONObject(message);
-			
 			ret.setSender(msgObj.getString(SENDER_KEY));
-			
 			ret.setType(msgObj.getString(MESSAGE_TYPE_KEY));
-			
 			ret.setData(msgObj.getJSONObject(DATA_KEY));
 
 			return ret;
@@ -124,6 +119,10 @@ public class Message {
 		else if(newType.equals("NULL"))
 		{
 			setType(MessageType.NULL);
+		}
+		else if(newType.equals("NEW"))
+		{
+			setType(MessageType.NEW);
 		}
 		else
 			setType(MessageType.NULL);

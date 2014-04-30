@@ -17,13 +17,12 @@ public class vClientManager {
 	public static void main(String[] args)
 	{
 		//Set the client state
-		ClientData.state = ClientData.State.NEGOTIATING;
+		ClientData.state = ClientData.State.REQUESTING;
 		
-		// create teh client resource singleton
+		// create the client resource singleton
 		ClientResource res = ClientResource.getInstance();
 		res.initWithFile("client-resources.txt");
 		//System.out.println("client has " + res.getBandwidth() + " resources");
-		
 		
 		args = Gst.init("Client Pipeline", args);
 		
@@ -41,9 +40,10 @@ public class vClientManager {
 		}
 		
 		//initialize static window reference
-		ClientData.vid_comp = new VideoComponent();
-		ClientData.windowSink = ClientData.vid_comp.getElement();
-		
+		ClientData.vidComp1 = new VideoComponent();
+		ClientData.window1 = ClientData.vidComp1.getElement();
+		ClientData.vidComp2 = new VideoComponent();
+		ClientData.window2 = ClientData.vidComp2.getElement();
 		
 		SwingUtilities.invokeLater(new Runnable() 
 		{ 
@@ -56,15 +56,20 @@ public class vClientManager {
 				//create encoding options panel
 				JPanel encOptions = ClientGUIManager.createEncodingOptionsPanel();
 				
-				//ClientData.frame.set
+				//create windows panel
+				JPanel windows = ClientGUIManager.createWindowsPanel();
+				
+				//create window picker
+				JPanel windowPicker = ClientGUIManager.createWindowPicker();
 				
 				//Actual top level widget
 				ClientData.frame = new JFrame("vPlayer"); 
 				ClientData.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);	            
 				ClientData.frame.add(ClientData.controls, BorderLayout.SOUTH);
 				ClientData.frame.add(encOptions, BorderLayout.EAST);
-				ClientData.frame.getContentPane().add(ClientData.vid_comp, BorderLayout.CENTER);
-				ClientData.vid_comp.setPreferredSize(new Dimension(640, 480)); 
+				ClientData.frame.add(windows, BorderLayout.CENTER);
+				ClientData.frame.add(windowPicker, BorderLayout.NORTH);
+				
 				ClientData.frame.setSize(1080, 920);
 				ClientData.frame.setVisible(true);
 	        } 

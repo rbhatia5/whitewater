@@ -32,7 +32,6 @@ public class ClientPipelineManager{
 		client_pipeline();
 		connect_to_signals();
 		ClientData.pipe.setState(State.READY);
-
 	}
 
 
@@ -48,7 +47,7 @@ public class ClientPipelineManager{
 		{
 			//need to explicitly remove windowSink
 			ClientData.pipe.setState(State.READY);
-			ClientData.pipe.remove(ClientData.windowSink);
+			ClientData.pipe.remove(ClientData.window1);
 			ClientData.pipe.remove(ClientData.RTCPSink);
 			ClientData.RTCPSink = null;
 			ClientData.pipe.setState(State.NULL);
@@ -122,12 +121,12 @@ public class ClientPipelineManager{
 
 		if(ClientData.mode == ClientData.Mode.ACTIVE){
 
-			ClientData.pipe.addMany(udpVideoSrc, ClientData.rtpBin, videodepay, videodecoder, ClientData.windowSink, udpVideoSrcRTCP, udpVideoSinkRTCP, udpAudioSrc, audiodepay, audiodecoder, audiosink, udpAudioSrcRTCP, udpAudioSinkRTCP);
+			ClientData.pipe.addMany(udpVideoSrc, ClientData.rtpBin, videodepay, videodecoder, ClientData.window1, udpVideoSrcRTCP, udpVideoSinkRTCP, udpAudioSrc, audiodepay, audiodecoder, audiosink, udpAudioSrcRTCP, udpAudioSinkRTCP);
 
 			//Link link-able elements
 			if(!Element.linkMany(udpVideoSrc, ClientData.rtpBin))
 				System.err.println("Could not link udp video to rtpbin");
-			if(!Element.linkMany(videodepay, videodecoder, ClientData.windowSink))
+			if(!Element.linkMany(videodepay, videodecoder, ClientData.window1))
 				System.err.println("Could not link video depay -> video decoder -> window sink");
 			if(!Element.linkMany(udpAudioSrc, ClientData.rtpBin))
 				System.err.println("Could not link udp audio to rtpbin");
@@ -185,12 +184,12 @@ public class ClientPipelineManager{
 		}
 		else if(ClientData.mode == ClientData.Mode.PASSIVE){
 			
-			ClientData.pipe.addMany(udpVideoSrc, ClientData.rtpBin, videodepay, videodecoder, ClientData.windowSink, udpVideoSrcRTCP, udpVideoSinkRTCP);
+			ClientData.pipe.addMany(udpVideoSrc, ClientData.rtpBin, videodepay, videodecoder, ClientData.window1, udpVideoSrcRTCP, udpVideoSinkRTCP);
 
 			//Link link-able elements
 			if(!Element.linkMany(udpVideoSrc, ClientData.rtpBin))
 				System.err.println("Could not link udp video to rtpbin");
-			if(!Element.linkMany(videodepay, videodecoder, ClientData.windowSink))
+			if(!Element.linkMany(videodepay, videodecoder, ClientData.window1))
 				System.err.println("Could not link video depay -> video decoder -> window sink");
 			//Element.linkMany(udpSrcRTCP, teeRTCP);
 			//Element.linkMany(queueAppSink, ClientData.RTCPSink);
