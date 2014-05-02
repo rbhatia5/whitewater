@@ -16,7 +16,6 @@ import org.json.JSONException;
 
 public class ClientGUIManager {
 	
-	
 	/**
 	 * Author:
 	 * Purpose:
@@ -123,10 +122,7 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to ready");
-				ClientData.data[ClientData.activeWindow].pipe.setState(State.READY);
-				
-				//TCPClient.sendServerMessage("stop");
-				
+				ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
 				Message stop = new Message(MessageType.CONTROL);
 				
 				try {
@@ -134,13 +130,18 @@ public class ClientGUIManager {
 					stop.addData(Message.ACTION_KEY, Message.STOP_ACTION);
 					
 				} catch (JSONException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 				
 				TCPClient.sendServerMessage(stop);
-				ClientData.data[ClientData.activeWindow].state = ClientData.State.NEGOTIATING;
 				
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				ClientData.data[ClientData.activeWindow].state = ClientData.State.REQUESTING;
 			}					
 		});
 		

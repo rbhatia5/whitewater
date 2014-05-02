@@ -43,7 +43,7 @@ public class ClientPipelineManager{
 		if(ClientData.data[ClientData.activeWindow].pipe != null)
 		{
 			//need to explicitly remove windowSink
-			ClientData.data[ClientData.activeWindow].pipe.setState(State.READY);
+			ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
 			ClientData.data[ClientData.activeWindow].pipe.remove(ClientData.data[ClientData.activeWindow].windowSink);
 			ClientData.data[ClientData.activeWindow].pipe.remove(ClientData.data[ClientData.activeWindow].RTCPSink);
 			ClientData.data[ClientData.activeWindow].RTCPSink = null;

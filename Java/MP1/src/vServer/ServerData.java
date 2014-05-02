@@ -4,9 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 
 
-import org.gstreamer.Format;
-import org.gstreamer.Pipeline;
-import org.gstreamer.SeekFlags;
+import org.gstreamer.*;
 import org.gstreamer.elements.good.RTPBin;
 
 import vNetwork.Message;
@@ -44,6 +42,7 @@ public class ServerData {
 	protected Thread mainThread;
 	protected State state;
 	protected Pipeline pipe;
+	protected Element fakeSink;
 	protected int Rate; 
 	protected RTPBin rtpBin;
 	protected String clientCommand;
@@ -75,5 +74,4 @@ public class ServerData {
 		System.out.println("Rate is now: " + rate);
 		pipe.seek(rate, format, flags, org.gstreamer.SeekType.NONE, 0, org.gstreamer.SeekType.NONE, 0);
 	}
-
 }

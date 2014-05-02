@@ -4,7 +4,8 @@ import org.gstreamer.*;
 
 public class vServerManager implements Runnable {
 	
-	protected static ServerData data;
+	protected ServerData data;
+	protected boolean quit;
 	
 	vServerManager(int serverNumber)
 	{
@@ -13,12 +14,12 @@ public class vServerManager implements Runnable {
 	
 	public void initializeTCPServer(int port, TCPServer.TYPE type)
 	{
-		TCPServer server = new TCPServer(port, type);
+		TCPServer server = new TCPServer(this, port, type);
 		new Thread(server).start();
 	}
 
 	public void run() {
-		
+		quit = false;
 		data.mainThread = Thread.currentThread();
 		data.state = ServerData.State.NEGOTIATING;
 		data.setIpAddress("localhost");
@@ -32,10 +33,13 @@ public class vServerManager implements Runnable {
 		String[] args = new String[0];
 		Gst.init("Server Pipeline", args);
 		data.mode = ServerData.Mode.SERVER;
-		ServerPipelineManager.modify_pipeline();
+		ServerPipelineManager SPM = new ServerPipelineManager(this);
+		SPM.modify_pipeline();
 		data.pipe.setState(State.READY);
 		
-		Gst.main();
+		//Gst.main();
+		while(!quit);
+		System.out.println("SERVER: Destroying Server " + Thread.currentThread().getId());
 	}
 
 }
