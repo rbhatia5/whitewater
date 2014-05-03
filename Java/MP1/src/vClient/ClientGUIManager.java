@@ -73,7 +73,8 @@ public class ClientGUIManager {
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to playing");
 				ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
-				ClientData.data[ClientData.activeWindow].RTCPSink.setState(State.PLAYING);
+				ClientData.data[ClientData.activeWindow].windowAppSink.setState(State.PLAYING);
+				ClientData.data[ClientData.activeWindow].udpVideoAppSink.setState(State.PLAYING);
 				//ClientData.appSink.setState(State.PLAYING);
 				ClientData.rate = 1;
 				

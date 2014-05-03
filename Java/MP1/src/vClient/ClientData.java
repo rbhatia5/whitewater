@@ -137,10 +137,10 @@ public class ClientData {
 	
 	//Appsink
 	public static AppSink getRTCPSink() {
-		return data[activeWindow].RTCPSink;
+		return data[activeWindow].windowAppSink;
 	}
 	public static void setRTCPSink(AppSink rTCPSink) {
-		data[activeWindow].RTCPSink = rTCPSink;
+		data[activeWindow].windowAppSink = rTCPSink;
 
 		
 	}

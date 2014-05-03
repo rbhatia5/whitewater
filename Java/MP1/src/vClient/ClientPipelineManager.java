@@ -48,8 +48,8 @@ public class ClientPipelineManager{
 			//need to explicitly remove windowSink
 			ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
 			ClientData.data[ClientData.activeWindow].pipe.remove(ClientData.data[ClientData.activeWindow].windowSink);
-			ClientData.data[ClientData.activeWindow].pipe.remove(ClientData.data[ClientData.activeWindow].RTCPSink);
-			ClientData.data[ClientData.activeWindow].RTCPSink = null;
+			ClientData.data[ClientData.activeWindow].pipe.remove(ClientData.data[ClientData.activeWindow].windowAppSink);
+			ClientData.data[ClientData.activeWindow].windowAppSink = null;
 			ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
 		}
 	}
@@ -65,6 +65,7 @@ public class ClientPipelineManager{
 		ClientData.data[ClientData.activeWindow].pipe = new Pipeline("client-pipeline");
 
 		/*
+PASSIVE/ACTIVE MODE
 		_______________	   _____________    ___________________    _______________    ______________    _______________
 		| udpsrc 5002 |	-> | gstrtpbin | -> | .recv_rtp_src_0 | -> | rtp263depay | -> | ffdec_h263 | -> | xvimagesink | 
 		_______________    _____________    ___________________    _______________    ______________    _______________
@@ -75,7 +76,7 @@ public class ClientPipelineManager{
 								|			_______________     _____________________
 								|___\		| udpsrc 5003 |  -> | .recv_rtcp_sink_0 |
 									/		_______________     _____________________		
-
+ACTIVE MODE
 	 	_______________	   _____________    ___________________    _________________    ____________    _________________
 		| udpsrc 5005 |	-> | gstrtpbin | -> | .recv_rtp_src_1 | -> | rtpspeexdepay | -> | speexdec | -> | autoaudiosink | 
 		_______________    _____________    ___________________    _________________    ____________    _________________
@@ -90,7 +91,7 @@ public class ClientPipelineManager{
 
 		 */
 
-
+		//Make video pipeline
 
 		//Initialize elements
 		Element udpVideoSrc 		= ElementFactory.make("udpsrc", "udp-video-src");
@@ -99,76 +100,158 @@ public class ClientPipelineManager{
 		Element videodecoder 		= ElementFactory.make("ffdec_h263", "video-decoder");
 		Element udpVideoSrcRTCP 	= ElementFactory.make("udpsrc", "udp-video-src-rtcp");
 		Element udpVideoSinkRTCP 	= ElementFactory.make("udpsink", "udp-video-sink-rtcp");
-		Element udpAudioSrc 		= ElementFactory.make("udpsrc", "udp-audio-src");
-		Element audiodepay 			= ElementFactory.make("rtpspeexdepay", "audio-depay");
-		Element audiodecoder 		= ElementFactory.make("speexdec", "audio-decoder");
-		Element audiosink 			= ElementFactory.make("autoaudiosink", "audio-sink");
-		Element udpAudioSrcRTCP 	= ElementFactory.make("udpsrc", "udp-audio-src-rtcp");
-		Element udpAudioSinkRTCP 	= ElementFactory.make("udpsink", "udp-audio-sink-rtcp");
-
-		Element teeRTCP = ElementFactory.make("tee", "rtcp-tee");
-		Element queueRTCP = ElementFactory.make("queue", "rtcp-queue");
-		Element queueAppSink = ElementFactory.make("queue", "app-sink-queue");
-		ClientData.data[ClientData.activeWindow].RTCPSink = (AppSink)ElementFactory.make("appsink", "rtcp-sink");
-
+		
+		
+		//Window appsink
+		Element windowTee = ElementFactory.make("tee", "window-tee");
+		Element windowQueue = ElementFactory.make("queue", "window-queue");
+		Element windowAppQueue = ElementFactory.make("queue", "window-app-sink-queue");
+		ClientData.data[ClientData.activeWindow].windowAppSink = (AppSink)ElementFactory.make("appsink", "window-app-sink");
+		
+		//udp appsink
+		Element udpVideoTee = ElementFactory.make("tee", "udp-video-tee");
+		Element udpVidQueue = ElementFactory.make("queue", "udp-video-queue");
+		Element udpVidAppQueue = ElementFactory.make("queue", "udp-vid-app-sink-queue");
+		ClientData.data[ClientData.activeWindow].udpVideoAppSink = (AppSink)ElementFactory.make("appsink", "udp-vid-app-sink");
+		
+		
 		//Error check
-		//if(udpSrc == null || ClientData.rtpBin == null || depay == null || decoder == null || udpSrcRTCP == null || udpSinkRTCP == null || teeRTCP == null || queueRTCP == null || queueAppSink == null || ClientData.RTCPSink == null)
-		if(udpVideoSrc == null || ClientData.data[ClientData.activeWindow].rtpBin == null || videodepay == null || videodecoder == null || udpVideoSrcRTCP == null || udpVideoSinkRTCP == null ||
-				udpAudioSrc == null || audiodepay == null || audiodecoder == null || audiosink == null || udpAudioSrcRTCP == null || udpAudioSinkRTCP == null)
+		if(udpVideoSrc == null || ClientData.data[ClientData.activeWindow].rtpBin == null || videodepay == null || videodecoder == null || udpVideoSrcRTCP == null || udpVideoSinkRTCP == null)
 		{
 			System.err.println("Could not create all elements");
 		}
+		
+		if(udpVideoTee == null || udpVidQueue == null || udpVidAppQueue==null || ClientData.data[ClientData.activeWindow].udpVideoAppSink==null)
+			System.err.println("Could not udp appsink elements");
+		
+		ClientData.data[ClientData.activeWindow].pipe.addMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin, videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink, udpVideoSrcRTCP, udpVideoSinkRTCP,
+				udpVideoTee,udpVidQueue,udpVidAppQueue,ClientData.data[ClientData.activeWindow].udpVideoAppSink,
+				windowTee,windowQueue,windowAppQueue,ClientData.data[ClientData.activeWindow].windowAppSink);
 
+		//Link link-able elements
+		//udp and rtpbin
+		if(!Element.linkMany(udpVideoSrc,udpVideoTee))
+			System.err.println("Could not link udp video to tee");
+		if(!Element.linkMany(udpVidQueue,ClientData.data[ClientData.activeWindow].rtpBin))
+			System.err.println("Could not link udpQ with rtp bin");
+		if(!Element.linkMany(udpVidAppQueue, ClientData.data[ClientData.activeWindow].udpVideoAppSink))
+			System.err.println("Could not connect udpvid appQ -> udp appsink");
+		
+		//Window sink and appsink
+		if(!Element.linkMany(windowQueue,ClientData.data[ClientData.activeWindow].windowSink))
+			System.err.println("Could not link queue video to window");
+		if(!Element.linkMany(videodepay, videodecoder,windowTee))
+			System.err.println("Could not link video depay -> video decoder -> window tee");
+		if(!Element.linkMany(windowAppQueue, ClientData.data[ClientData.activeWindow].windowAppSink))
+			System.err.println("Could not link appsink queue -> window app sink");
+
+		
+		
+		Caps udpVideoCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
+		udpVideoSrc.setCaps(udpVideoCaps);
+		udpVideoSrc.set("port", ClientData.data[ClientData.activeWindow].videoRTP);
+		udpVideoSrcRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPin);
+		udpVideoSinkRTCP.set("host", ClientData.data[ClientData.activeWindow].serverAddress);
+		udpVideoSinkRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPout);
+
+		windowTee.set("silent", false);
+		ClientData.data[ClientData.activeWindow].windowAppSink.set("emit-signals", true);
+
+		//Link request pads manually
+		PadLinkReturn ret = null;
+		
+		//Link rtcp source to udpsink
+		Pad send_rtcp_src_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("send_rtcp_src_0");
+		Pad udpVideoSinkPadRTCP = udpVideoSinkRTCP.getStaticPad("sink");
+		ret = send_rtcp_src_0.link(udpVideoSinkPadRTCP);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link send_rtcp_src_0 to udpsink, %s\n", ret.toString());
+
+		//Link queue to rtcp receiver
+		Pad recv_rtcp_sink_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("recv_rtcp_sink_0");
+		Pad udpVideoSrcPadRTCP = udpVideoSrcRTCP.getStaticPad("src");
+		ret = udpVideoSrcPadRTCP.link(recv_rtcp_sink_0);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link udpsrc to recv_rtcp_sink_0, %s\n", ret.toString());
+		
+
+		
+		//Link udp tee to queues
+		Pad udpVideoTeeSrcPad = udpVideoTee.getRequestPad("src%d");
+		Pad udpVidAppTeeSrcPad = udpVideoTee.getRequestPad("src%d");
+		Pad udpVidQueueSinkPad = udpVidQueue.getStaticPad("sink");
+		Pad udpVidAppQueueSinkPad = udpVidAppQueue.getStaticPad("sink");
+		ret = udpVideoTeeSrcPad.link(udpVidQueueSinkPad);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("UDP: Could not link tee to queue, %s\n", ret.toString());
+		ret = udpVidAppTeeSrcPad.link(udpVidAppQueueSinkPad);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("UDP: Could not link tee to appsink queue, %s\n", ret.toString());
+		
+		//Link window tee to queues
+		Pad windowTeeSrcPad = windowTee.getRequestPad("src%d");
+		Pad windowAppTeeSrcPad = windowTee.getRequestPad("src%d");
+		Pad windowQueueSinkPad = windowQueue.getStaticPad("sink");
+		Pad windowAppQueueSinkPad = windowAppQueue.getStaticPad("sink");
+		ret = windowTeeSrcPad.link(windowQueueSinkPad);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link tee to RTCP queue, %s\n", ret.toString());
+		ret = windowAppTeeSrcPad.link(windowAppQueueSinkPad);
+		if(!ret.equals(PadLinkReturn.OK))
+			System.err.printf("Could not link tee to appsink queue, %s\n", ret.toString());
+		
+		
+		//QOS event listener
+		Pad windowSink = ClientData.data[ClientData.activeWindow].windowSink.getStaticPad("sink");
+		windowSink.addEventProbe(new EVENT_PROBE() {
+			@Override
+			public boolean eventReceived(Pad arg0, Event arg1) {
+				if(arg0.equals( ClientData.data[ClientData.activeWindow].windowSink.getStaticPad("sink")))
+				{
+					
+					//System.out.println("Pad is : " + arg0.getNativeAddress().toString() + ", Global Pad is : " + ClientData.data[ClientData.activeWindow].windowSink.getStaticPad("sink").getNativeAddress().toString());
+					
+					//System.out.println("Event is : " + arg1.getStructure().toString());
+				
+					ClientGUIManager.addTextToMonitor("Jitter is : "+((QOSEvent) arg1).getDifference()/Math.pow(10,6));
+				}
+				return false;
+				
+			}
+			
+		});
+		
+		
+		
+		
+		//Add the audio pipeline if the session is Active
 		if(ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.ACTIVE){
+			
+			Element udpAudioSrc 		= ElementFactory.make("udpsrc", "udp-audio-src");
+			Element audiodepay 			= ElementFactory.make("rtpspeexdepay", "audio-depay");
+			Element audiodecoder 		= ElementFactory.make("speexdec", "audio-decoder");
+			Element audiosink 			= ElementFactory.make("autoaudiosink", "audio-sink");
+			Element udpAudioSrcRTCP 	= ElementFactory.make("udpsrc", "udp-audio-src-rtcp");
+			Element udpAudioSinkRTCP 	= ElementFactory.make("udpsink", "udp-audio-sink-rtcp");
+			
+			if(udpAudioSrc == null || audiodepay == null || audiodecoder == null || audiosink == null || udpAudioSrcRTCP == null || udpAudioSinkRTCP == null)
+				System.err.println("Could not create all elements");
 
-			ClientData.data[ClientData.activeWindow].pipe.addMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin, videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink, udpVideoSrcRTCP, udpVideoSinkRTCP, udpAudioSrc, audiodepay, audiodecoder, audiosink, udpAudioSrcRTCP, udpAudioSinkRTCP);
+			ClientData.data[ClientData.activeWindow].pipe.addMany(udpAudioSrc, audiodepay, audiodecoder, audiosink, udpAudioSrcRTCP, udpAudioSinkRTCP);
 
-			//Link link-able elements
-			if(!Element.linkMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin))
-				System.err.println("Could not link udp video to rtpbin");
-			if(!Element.linkMany(videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink))
-				System.err.println("Could not link video depay -> video decoder -> window sink");
+
+			//Audio
 			if(!Element.linkMany(udpAudioSrc, ClientData.data[ClientData.activeWindow].rtpBin))
 				System.err.println("Could not link udp audio to rtpbin");
 			if(!Element.linkMany(audiodepay, audiodecoder, audiosink))
 				System.err.println("Could not link audio depay -> audio decoder -> audio sink");
 			
-			//Element.linkMany(udpVideoSrcRTCP, teeRTCP);
-			//Element.linkMany(queueAppSink, ClientData.data[ClientData.activeWindow].RTCPSink);
-
-			Caps udpVideoCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
-			udpVideoSrc.setCaps(udpVideoCaps);
-			udpVideoSrc.set("port", ClientData.data[ClientData.activeWindow].videoRTP);
-			udpVideoSrcRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPin);
-			udpVideoSinkRTCP.set("host", ClientData.data[ClientData.activeWindow].serverAddress);
-			udpVideoSinkRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPout);
-
 			Caps udpAudioCaps = Caps.fromString("application/x-rtp,encoding-name=(string)SPEEX,media=(string)audio,clock-rate=(int)48000,payload=(int)96");
 			udpAudioSrc.setCaps(udpAudioCaps);
 			udpAudioSrc.set("port", ClientData.data[ClientData.activeWindow].audioRTP);
 			udpAudioSrcRTCP.set("port", ClientData.data[ClientData.activeWindow].audioRTCPin);
 			udpAudioSinkRTCP.set("host", ClientData.data[ClientData.activeWindow].serverAddress);
 			udpAudioSinkRTCP.set("port", ClientData.data[ClientData.activeWindow].audioRTCPout);
-
-			
-		//	teeRTCP.set("silent", false);
-		//	ClientData.data[ClientData.activeWindow].RTCPSink.set("emit-signals", true);
-
-			//Link request pads manually
-			PadLinkReturn ret = null;
-			//Link rtcp source to udpsink
-			Pad send_rtcp_src_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("send_rtcp_src_0");
-			Pad udpVideoSinkPadRTCP = udpVideoSinkRTCP.getStaticPad("sink");
-			ret = send_rtcp_src_0.link(udpVideoSinkPadRTCP);
-			if(!ret.equals(PadLinkReturn.OK))
-				System.err.printf("Could not link send_rtcp_src_0 to udpsink, %s\n", ret.toString());
-
-			//Link queue to rtcp receiver
-			Pad recv_rtcp_sink_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("recv_rtcp_sink_0");
-			Pad udpVideoSrcPadRTCP = udpVideoSrcRTCP.getStaticPad("src");
-			ret = udpVideoSrcPadRTCP.link(recv_rtcp_sink_0);
-			if(!ret.equals(PadLinkReturn.OK))
-				System.err.printf("Could not link udpsrc to recv_rtcp_sink_0, %s\n", ret.toString());
 
 			Pad send_rtcp_src_1 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("send_rtcp_src_1");
 			Pad udpAudioSinkPadRTCP = udpAudioSinkRTCP.getStaticPad("sink");
@@ -182,84 +265,7 @@ public class ClientPipelineManager{
 			ret = udpAudioSrcPadRTCP.link(recv_rtcp_sink_1);
 			if(!ret.equals(PadLinkReturn.OK))
 				System.err.printf("Could not link udpsrc to recv_rtcp_sink_1, %s\n", ret.toString());
-		}
-		else if(ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.PASSIVE){
 			
-			ClientData.data[ClientData.activeWindow].pipe.addMany(udpVideoSrc, ClientData.data[ClientData.activeWindow].rtpBin, videodepay, videodecoder, ClientData.data[ClientData.activeWindow].windowSink, udpVideoSrcRTCP, udpVideoSinkRTCP
-					,teeRTCP,queueRTCP,queueAppSink,ClientData.data[ClientData.activeWindow].RTCPSink);
-
-			//Link link-able elements
-			if(!Element.linkMany(udpVideoSrc,ClientData.data[ClientData.activeWindow].rtpBin))
-				System.err.println("Could not link udp video to rtpbin");
-			if(!Element.linkMany(queueRTCP,ClientData.data[ClientData.activeWindow].windowSink))
-				System.err.println("Could not link queue video to rtpbin");
-			if(!Element.linkMany(videodepay, videodecoder,teeRTCP))
-				
-				
-				System.err.println("Could not link video depay -> video decoder -> window sink");
-			
-			
-			Element.linkMany(queueAppSink, ClientData.data[ClientData.activeWindow].RTCPSink);
-
-			Caps udpVideoCaps = Caps.fromString("application/x-rtp,encoding-name=(string)H263,media=(string)video,clock-rate=(int)90000,payload=(int)96");
-			udpVideoSrc.setCaps(udpVideoCaps);
-			udpVideoSrc.set("port", ClientData.data[ClientData.activeWindow].videoRTP);
-			udpVideoSrcRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPin);
-			udpVideoSinkRTCP.set("host", ClientData.data[ClientData.activeWindow].serverAddress);
-			udpVideoSinkRTCP.set("port", ClientData.data[ClientData.activeWindow].videoRTCPout);
-
-			
-			teeRTCP.set("silent", false);
-			ClientData.data[ClientData.activeWindow].RTCPSink.set("emit-signals", true);
-
-			//Link request pads manually
-			PadLinkReturn ret = null;
-			//Link rtcp source to udpsink
-			Pad send_rtcp_src_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("send_rtcp_src_0");
-			Pad udpVideoSinkPadRTCP = udpVideoSinkRTCP.getStaticPad("sink");
-			ret = send_rtcp_src_0.link(udpVideoSinkPadRTCP);
-			if(!ret.equals(PadLinkReturn.OK))
-				System.err.printf("Could not link send_rtcp_src_0 to udpsink, %s\n", ret.toString());
-
-			//Link queue to rtcp receiver
-			Pad recv_rtcp_sink_0 = ClientData.data[ClientData.activeWindow].rtpBin.getRequestPad("recv_rtcp_sink_0");
-			Pad udpVideoSrcPadRTCP = udpVideoSrcRTCP.getStaticPad("src");
-			ret = udpVideoSrcPadRTCP.link(recv_rtcp_sink_0);
-			if(!ret.equals(PadLinkReturn.OK))
-				System.err.printf("Could not link udpsrc to recv_rtcp_sink_0, %s\n", ret.toString());
-			
-			
-			//Link tee to queues
-			Pad teeSrcPadRTCP = teeRTCP.getRequestPad("src%d");
-			Pad teeSrcPadAppSink = teeRTCP.getRequestPad("src%d");
-			Pad queueSinkPadRTCP = queueRTCP.getStaticPad("sink");
-			Pad queueSinkPadAppSink = queueAppSink.getStaticPad("sink");
-			ret = teeSrcPadRTCP.link(queueSinkPadRTCP);
-			if(!ret.equals(PadLinkReturn.OK))
-				System.err.printf("Could not link tee to RTCP queue, %s\n", ret.toString());
-			ret = teeSrcPadAppSink.link(queueSinkPadAppSink);
-			if(!ret.equals(PadLinkReturn.OK))
-				System.err.printf("Could not link tee to appsink queue, %s\n", ret.toString());
-			
-			Pad windowSink = ClientData.data[ClientData.activeWindow].windowSink.getStaticPad("sink");
-			windowSink.addEventProbe(new EVENT_PROBE() {
-				@Override
-				public boolean eventReceived(Pad arg0, Event arg1) {
-					if(arg0.equals( ClientData.data[ClientData.activeWindow].windowSink.getStaticPad("sink")))
-					{
-						
-						System.out.println("Pad is : " + arg0.getNativeAddress().toString() + ", Global Pad is : " + ClientData.data[ClientData.activeWindow].windowSink.getStaticPad("sink").getNativeAddress().toString());
-						
-						//System.out.println("Event is : " + arg1.getStructure().toString());
-					
-						ClientGUIManager.addTextToMonitor("Jitter is : "+((QOSEvent) arg1).getDifference()/Math.pow(10,6));
-					}
-					return false;
-					
-				}
-				
-			});
-
 		}
 
 		
@@ -313,25 +319,36 @@ public class ClientPipelineManager{
 				{
 					System.out.printf("[%s] changed state from %s to %s\n", source.getName(), oldstate.toString(), newstate.toString());
 				}
-				else if(source.equals(ClientData.data[ClientData.activeWindow].RTCPSink))
+				else if(source.equals(ClientData.data[ClientData.activeWindow].windowAppSink))
 				{
+				/*
 					if(newstate.equals(State.PLAYING))
 						ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
 					else if(newstate.equals(State.PAUSED))
 						ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
+				*/
 				}
 			}
 		});
 
 		//connect to new buffer
-		
-		ClientData.data[ClientData.activeWindow].RTCPSink.connect(new AppSink.NEW_BUFFER() {
+		ClientData.data[ClientData.activeWindow].windowAppSink.connect(new AppSink.NEW_BUFFER() {
 			public void newBuffer(AppSink source) {
 				
 				
-				Buffer RTCPBuffer = source.pullBuffer();
-				if(source.equals(ClientData.data[ClientData.activeWindow].RTCPSink))
-					decodeRTCPPacket(RTCPBuffer);
+				Buffer windowBuffer = source.pullBuffer();
+				if(source.equals(ClientData.data[ClientData.activeWindow].windowAppSink))
+					pullWindowSinkBuff(windowBuffer);
+			}
+		});
+		
+		ClientData.data[ClientData.activeWindow].udpVideoAppSink.connect(new AppSink.NEW_BUFFER() {
+			public void newBuffer(AppSink source) {
+				
+				
+				Buffer udpVidBuffer = source.pullBuffer();
+				if(source.equals(ClientData.data[ClientData.activeWindow].udpVideoAppSink))
+					pullUdpVidBuff(udpVidBuffer);
 			}
 		});
 		
@@ -398,13 +415,29 @@ public class ClientPipelineManager{
 	}
 
 
+	static void pullUdpVidBuff(Buffer buffer) {
+		
+		if(buffer != null){
+			Caps caps = buffer.getCaps();
+			if(caps == null){
+				return;
+			}
+			
+			Structure s = caps.getStructure(0);
+			
+			System.out.println(s.toString());
+		
+		}
+	}
+
+
 	/**
 	 * Author:
 	 * Purpose:
 	 * Parameters:
 	 * Return:
 	 */
-	static void decodeRTCPPacket(Buffer buffer)
+	static void pullWindowSinkBuff(Buffer buffer)
 	{
 		
 		if(buffer != null){
@@ -419,24 +452,6 @@ public class ClientPipelineManager{
 			Fraction fps = s.getFraction("framerate");
 			int intFps = (int)fps.toDouble();
 			ClientGUIManager.addTextToFramerateMonitor("Framerate is : " + intFps);
-			
-			
-//			int width = s.getInteger("width");
-//			int height = s.getInteger("height");
-//			
-//			if((width == 0) || (height ==0)){
-//				System.err.println("Could not get sought dimension");
-//			}
-//			
-//			
-//			System.out.println("Buffer information: ");
-//			System.out.println("\tWidth     : " + width);
-//			System.out.println("\tHeight    : " + height);
-//			System.out.println("\tSize      : " + buffer.getSize());
-//			System.out.println("\tDuration  : " + buffer.getDuration().getNanoSeconds() + "ns");
-//			System.out.println("\tOffset    : " + buffer.getOffset());
-//			System.out.println("\tTimestamp : " + buffer.getTimestamp().getNanoSeconds() + "ns");
-			//ClientGUIManager.addTextToFramerateMonitor(s.toString());
 			
 		}
 		

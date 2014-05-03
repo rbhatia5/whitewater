@@ -32,7 +32,16 @@ public class GstData {
 	protected State state;
 	protected Mode mode;
 	protected Pipeline pipe;
-	protected AppSink RTCPSink;
 	protected RTPBin rtpBin;
 	protected Element windowSink;
+	
+	//Video appsinks
+	protected AppSink windowAppSink;
+	protected AppSink udpVideoAppSink;
+	
+	//Audio appsinks
+	protected AppSink audioOutAppsink;
+	protected AppSink udpAudioAppSink;
+	
+	
 }
