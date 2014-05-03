@@ -50,6 +50,12 @@ public class ClientData {
 	protected static long timeStamp;
 	protected static long encDecTime;
 	protected static String ipAddress;
+
+
+
+	public static JTextArea framerateMonitor;
+	
+	
 	
 	
 	
@@ -135,7 +141,10 @@ public class ClientData {
 	}
 	public static void setRTCPSink(AppSink rTCPSink) {
 		data[activeWindow].RTCPSink = rTCPSink;
+
+		
 	}
+
 	
 	//RTPBin
 	public static RTPBin getRtpBin() {

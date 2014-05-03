@@ -73,6 +73,7 @@ public class ClientGUIManager {
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to playing");
 				ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
+				ClientData.data[ClientData.activeWindow].RTCPSink.setState(State.PLAYING);
 				//ClientData.appSink.setState(State.PLAYING);
 				ClientData.rate = 1;
 				
@@ -454,7 +455,20 @@ public class ClientGUIManager {
 	 * Purpose:
 	 * Parameters:
 	 * Return:
+	 * @return 
 	 */
+	
+	protected static void addTextToMonitor(String text){
+		
+		ClientData.monitor.setText(text); //(ClientData.monitor.getText()+"\n"+
+		
+	}
+	
+	protected static void addTextToFramerateMonitor(String text)
+	{
+		ClientData.framerateMonitor.setText(text);
+	}
+	
 	protected static JPanel createEncodingOptionsPanel()
 	{
 		//create user options panel
@@ -463,11 +477,16 @@ public class ClientGUIManager {
 		//Monitor data
 		ClientData.monitor = new JTextArea();
 		JScrollPane scrollPane = new JScrollPane(ClientData.monitor);
-		scrollPane.setPreferredSize(new Dimension(150, 200));
+		scrollPane.setPreferredSize(new Dimension(300, 50));
 		ClientData.monitor.setEditable(false);
 		
+		ClientData.framerateMonitor = new JTextArea();
+		JScrollPane bandScroll = new JScrollPane(ClientData.framerateMonitor);
+		bandScroll.setPreferredSize(new Dimension(300,50));
+		ClientData.framerateMonitor.setEditable(false);
+		
 		JPanel encOptions = new JPanel();
-		encOptions.setPreferredSize(new Dimension(200,150));
+		encOptions.setPreferredSize(new Dimension(320,150));
 		encOptions.add(userOptions);
 		
 		//define layout
@@ -481,15 +500,23 @@ public class ClientGUIManager {
 					.addComponent(scrollPane,  GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 					          GroupLayout.PREFERRED_SIZE)
 					)
+					.addGroup(encLayout.createSequentialGroup()
+					.addComponent(bandScroll, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+					          GroupLayout.PREFERRED_SIZE)
+					)
 					.addGroup(encLayout.createSequentialGroup()						
 					.addComponent(userOptions, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 					          GroupLayout.PREFERRED_SIZE)
 					)
+					
 		);
 		encLayout.setVerticalGroup(
 				encLayout.createSequentialGroup()		
 					.addGroup(encLayout.createParallelGroup()						
 					.addComponent(scrollPane)
+					)
+					.addGroup(encLayout.createParallelGroup()
+					.addComponent(bandScroll)
 					)
 					.addGroup(encLayout.createParallelGroup()						
 					.addComponent(userOptions)

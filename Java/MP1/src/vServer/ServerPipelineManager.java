@@ -1,6 +1,7 @@
 package vServer;
 
 import org.gstreamer.Bus;
+import org.gstreamer.Caps;
 import org.gstreamer.Element;
 import org.gstreamer.ElementFactory;
 import org.gstreamer.Gst;
@@ -316,9 +317,9 @@ public class ServerPipelineManager {
 
 
 
-			//String rateCapsStr = String.format("video/x-raw-yuv,framerate=%s/1", vServerManager.data.framerate);
-			//System.out.println(rateCapsStr);
-			//Caps rateCaps = Caps.fromString(rateCapsStr);
+			String rateCapsStr = String.format("video/x-raw-yuv,framerate=%s/1", SM.data.framerate);
+			System.out.println(rateCapsStr);
+			Caps rateCaps = Caps.fromString(rateCapsStr);
 
 			//String scaleCapsStr = String.format("video/x-raw-yuv,width=%s,height=%s", vServerManager.data.width, vServerManager.data.height);
 			//System.out.println(scaleCapsStr);

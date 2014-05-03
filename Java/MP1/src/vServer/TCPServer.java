@@ -82,6 +82,8 @@ public class TCPServer implements Runnable{
 				{
 					RequestServer.serverNumber++;
 					vServerManager server = new vServerManager(RequestServer.serverNumber);
+					server.data.clientIP = connectionSocket.getInetAddress().toString().substring(1);
+					
 					Thread serverThread = new Thread(server);
 					RequestServer.servers.add(serverThread);
 					serverThread.start();
