@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 import org.gstreamer.Gst;
 import org.gstreamer.State;
@@ -141,6 +142,21 @@ public class TCPServer implements Runnable{
 				else if(SM.data.state.equals(ServerData.State.STREAMING))
 				{
 					try {
+						SM.data.clientMessage.getData(Message.ACTION_KEY);
+						adaptPipeline();
+						Message response = new Message (MessageType.RESPONSE);
+						response.setSender("SV00");
+						response.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
+						outToClient.writeBytes(response.stringify() + '\n');
+					} catch (JSONException e) {
+						changeActivity();
+						Message response = new Message(MessageType.RESPONSE);
+						response.setSender("SV00");
+						response.addData(Message.POSITION_KEY, Long.toString(SM.data.position));
+						outToClient.writeBytes(response.stringify() + '\n');
+					}
+					/*
+					try {
 						adaptPipeline();
 						Message response = new Message (MessageType.RESPONSE);
 						response.setSender("SV00");
@@ -152,6 +168,7 @@ public class TCPServer implements Runnable{
 						e.printStackTrace();
 						System.err.println("could not send rseponse to client");
 					}
+					*/
 				}
 			}
 		} catch (IOException e) {
@@ -220,9 +237,32 @@ public class TCPServer implements Runnable{
 		
 		if(action.equals(Message.PLAY_ACTION))
 		{
-			StateChangeReturn ret = SM.data.pipe.setState(State.PLAYING);
+			/*
+			while(!SM.data.pipe.getState().equals(State.PLAYING))
+			{
+				SM.data.pipe.setState(State.PLAYING);
+				try {
+					Thread.sleep(5);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}*/
+			//while(SM.data.pipe.setState(State.PLAYING).equals(StateChangeReturn.FAILURE));
+			
+			SM.data.pipe.setState(State.PLAYING);
+			/*	try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			*/
+			if(SM.data.position != 0)
+			{
+				boolean success = SM.data.pipe.seek(SM.data.position, TimeUnit.SECONDS);
+				System.out.println("SERVER seek " + success);
+			}
 			SM.data.setRate(SM.data.pipe, 1); 
-			System.out.println(ret.toString());
 			SM.data.fakeSink.setState(State.PLAYING);
 		}
 		else if(action.equals(Message.PAUSE_ACTION))
@@ -234,10 +274,7 @@ public class TCPServer implements Runnable{
 		else if(action.equals(Message.STOP_ACTION))
 		{
 			StateChangeReturn ret = SM.data.pipe.setState(State.NULL);
-			//Gst.quit();
 			quit = true;
-			//SM.data.state = ServerData.State.NEGOTIATING;
-			//System.out.println(ret.toString());
 		}
 		else if(action.equals(Message.FAST_FORWARD_ACTION))
 		{ 
@@ -257,6 +294,17 @@ public class TCPServer implements Runnable{
 				SM.data.setRate(SM.data.pipe, -2);
 			else if ( SM.data.Rate > 1)
 				SM.data.setRate(SM.data.pipe, 1);
+		}
+	}
+	
+	protected void changeActivity()
+	{
+		try {
+			String position = (String) SM.data.clientMessage.getData(Message.POSITION_KEY);
+			SM.data.position = Long.parseLong(position);
+			System.out.println("Server position is " + SM.data.position);
+		} catch (JSONException e) {
+			SM.data.position = SM.data.pipe.queryPosition(TimeUnit.SECONDS);
 		}
 	}
 	

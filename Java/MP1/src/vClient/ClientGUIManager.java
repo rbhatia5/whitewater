@@ -28,7 +28,6 @@ public class ClientGUIManager {
 		negotiateButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-
 				if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
 				{
 					//first request ports, then negotiate properties
@@ -93,7 +92,8 @@ public class ClientGUIManager {
 					e1.printStackTrace();
 				}
 
-				TCPClient.sendServerMessage(play);
+				//TCPClient.sendServerMessage(play);
+				TCPClient.controlMessage(play);
 
 			}					
 		});
@@ -119,7 +119,8 @@ public class ClientGUIManager {
 					e1.printStackTrace();
 				}
 
-				TCPClient.sendServerMessage(pause);
+				//TCPClient.sendServerMessage(pause);
+				TCPClient.controlMessage(pause);
 			}					
 		});
 
@@ -140,14 +141,15 @@ public class ClientGUIManager {
 					e1.printStackTrace();
 				}
 
-				TCPClient.sendServerMessage(stop);
-
+				//TCPClient.sendServerMessage(stop);
+				TCPClient.controlMessage(stop);
+				/*
 				try {
 					Thread.sleep(2000);
 				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
+				*/
 				ClientData.data[ClientData.activeWindow].state = ClientData.State.REQUESTING;
 			}					
 		});
@@ -165,7 +167,6 @@ public class ClientGUIManager {
 					ff.addData(Message.ACTION_KEY, Message.FAST_FORWARD_ACTION);
 
 				} catch (JSONException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 
@@ -195,42 +196,6 @@ public class ClientGUIManager {
 			}
 		});
 
-
-		//		ClientData.duration = 51;
-		//		//System.out.println((int)(ClientData.duration/1000000000));
-		//		ClientData.slider = new JSlider(0,(int)(ClientData.duration/1000000000),0);
-		//		ClientData.slider.addChangeListener(new ChangeListener(){
-		//			public void stateChanged(ChangeEvent e) {
-		//				if(ClientData.seek)
-		//				{
-		//					ClientData.pipe.seek(ClientData.slider.getValue(), TimeUnit.SECONDS);
-		//					ClientData.seek = false;
-		//				}
-		//			}
-		//		});
-		//		ClientData.slider.addMouseListener(new MouseListener()
-		//				{
-		//					public void mouseClicked(MouseEvent e) {
-		//						ClientData.seek = true;
-		//					}
-		//
-		//					public void mousePressed(MouseEvent e) {
-		//
-		//					}
-		//
-		//					public void mouseReleased(MouseEvent e) {
-		//						ClientData.seek = true;
-		//					}
-		//
-		//					public void mouseEntered(MouseEvent e) {
-		//
-		//					}
-		//
-		//					public void mouseExited(MouseEvent e) {
-		//					}
-		//					
-		//				});
-
 		JPanel controls = new JPanel();
 		controls.add(negotiateButton);
 		controls.add(playButton);
@@ -238,9 +203,7 @@ public class ClientGUIManager {
 		controls.add(stopButton);
 		controls.add(fastForwardButton);
 		controls.add(rewindButton);
-		//controls.add(ClientData.slider);
 
-		//add buttons to list
 		ClientData.controlButtons.add(negotiateButton);
 		ClientData.controlButtons.add(playButton);
 		ClientData.controlButtons.add(pauseButton);
@@ -248,7 +211,6 @@ public class ClientGUIManager {
 		ClientData.controlButtons.add(fastForwardButton);
 		ClientData.controlButtons.add(rewindButton);
 
-		//define layout
 		GroupLayout layout = new GroupLayout(controls);
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
@@ -264,7 +226,6 @@ public class ClientGUIManager {
 						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED,
 								GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 								.addComponent(negotiateButton)
-								//.addComponent(ClientData.slider)
 						)
 				);				
 		layout.setVerticalGroup(
@@ -276,7 +237,6 @@ public class ClientGUIManager {
 						.addComponent(fastForwardButton)
 						.addComponent(stopButton)
 						.addComponent(negotiateButton)
-						//.addComponent(ClientData.slider)
 						)
 				);
 		controls.setLayout(layout);
@@ -322,12 +282,54 @@ public class ClientGUIManager {
 					ClientData.setMode(ClientData.Mode.ACTIVE);
 				else
 					ClientData.setMode( ClientData.Mode.PASSIVE);
+				
+				if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.STREAMING))
+				{
+					Message activityMsg = new Message();
+					try {
+						activityMsg.setSender("VC00");
+						activityMsg.setType(MessageType.CONTROL);
+						activityMsg.addData(Message.ACTIVITY_KEY, ClientData.data[ClientData.activeWindow].mode);
+					} catch (JSONException e1) {
+						System.err.println("CLIENT: Could not create activity change request");
+						e1.printStackTrace();
+					}
+					//TCPClient.sendServerMessage(activityMsg);
+					TCPClient.controlMessage(activityMsg);
+					
+					try {
+						String position = (String) ClientData.serverMessage.getData(Message.POSITION_KEY);
+						ClientData.position = Long.parseLong(position);
+						System.out.println("CURRENT POSITION IS " + ClientData.position);
+					} catch (JSONException e2) {
+						System.err.println("CLIENT: Could not query position\n");
+					}
+					
+					JButton stopButton = ClientData.controlButtons.get(3);
+					JButton connectButton = ClientData.controlButtons.get(0);
+					JButton playButton = ClientData.controlButtons.get(1);
+					
+					stopButton.doClick();
+					connectButton.doClick();
+					
+					activityMsg = new Message();
+					try {
+						activityMsg.setSender("VC00");
+						activityMsg.setType(MessageType.CONTROL);
+						activityMsg.addData(Message.ACTIVITY_KEY, ClientData.data[ClientData.activeWindow].mode);
+						activityMsg.addData(Message.POSITION_KEY, Long.toString(ClientData.position));
+					} catch (JSONException e1) {
+						System.err.println("CLIENT: Could not create activity change request");
+						e1.printStackTrace();
+					}
+					TCPClient.controlMessage(activityMsg);
+					
+					playButton.doClick();
+				}
 			}
 		});
 
 		ClientData.optionsComponents.add(activeOrPassive);
-
-
 
 		JLabel resLabel = new JLabel("Resolution");
 		resLabel.setPreferredSize(new Dimension(150, 30));

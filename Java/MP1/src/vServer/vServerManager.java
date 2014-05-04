@@ -33,6 +33,7 @@ public class vServerManager implements Runnable {
 		String[] args = new String[0];
 		Gst.init("Server Pipeline", args);
 		data.mode = ServerData.Mode.SERVER;
+		data.position = (long) 0;
 		ServerPipelineManager SPM = new ServerPipelineManager(this);
 		SPM.modify_pipeline();
 		data.pipe.setState(State.READY);

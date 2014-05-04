@@ -30,7 +30,7 @@ public class Message {
 	public static final String ACTIVITY_ACTIVE_VALUE = "active";
 	public static final String ACTIVITY_PASSIVE_VALUE = "passive";
 	public final static String PORT_REQUEST_KEY = "port";
-	
+	public final static String POSITION_KEY = "position";
 	
 	public enum MessageType {
 		NEW, REQUEST, CONTROL, RESPONSE, NULL

@@ -11,6 +11,7 @@ public class TCPClient implements Runnable{
 
 	protected String message;
 	protected Message msg;
+	protected static boolean control;
 	
 	/**
 	 * Author:
@@ -76,13 +77,19 @@ public class TCPClient implements Runnable{
 			{
 				System.out.println("CLIENT: Beginning negotiation");
 				ClientData.data[ClientData.activeWindow].state = ClientData.State.NEGOTIATING;
-				ClientData.mainThread.interrupt();
+				if(!control)
+					ClientData.mainThread.interrupt();
 			}
 			else if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.NEGOTIATING))
 			{
 				System.out.println("CLIENT: Beginning streaming");
 				ClientData.data[ClientData.activeWindow].state = ClientData.State.STREAMING;
-				ClientData.mainThread.interrupt();
+				if(!control)
+					ClientData.mainThread.interrupt();
+			}
+			if(control)
+			{
+				ClientData.mainThread.notify(); 
 			}
 		}
 		catch (IOException e)
@@ -103,25 +110,11 @@ public class TCPClient implements Runnable{
 	 * Parameters:
 	 * Return:
 	 */
-	public static String negotiateProperties(String properties)
-	{		
-		TCPClient.sendServerMessage(properties);
-		while(!ClientData.mainThread.interrupted());
-		
-		if(!ClientData.serverResponse.equals(properties))
-		{
-			System.out.println("Negotiation Failed: Server cannot facilitate request. Modify properties to " + ClientData.serverResponse);
-		}
-		else
-		{
-			System.out.println("Negotiation Successful: Setting properties to " + ClientData.serverResponse);
-		}
-		return ClientData.serverResponse;
-	}
-	
 	public static boolean negotiateProperties(Message properties)
 	{		
+		control = false;
 		TCPClient.sendServerMessage(properties);
+		//TCPClient.controlMessage(properties);
 		while(!ClientData.mainThread.interrupted());
 		
 		if(ClientData.serverMessage.getType() != Message.MessageType.RESPONSE)
@@ -154,13 +147,31 @@ public class TCPClient implements Runnable{
 	
 	public static void requestPort(Message portRequest)
 	{
-		TCPClient.sendServerMessage(portRequest);
-		while(!ClientData.mainThread.interrupted());
+		control = false;
+		//TCPClient.sendServerMessage(portRequest);
+		TCPClient.controlMessage(portRequest);
+		//while(!ClientData.mainThread.interrupted());
 		try {
 			Integer serverNumber = (Integer) ClientData.serverMessage.getData(Message.PORT_REQUEST_KEY);  
 			ClientData.data[ClientData.activeWindow].setPorts(serverNumber);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void controlMessage(Message controlMessage)
+	{
+		TCPClient.control = true;
+		TCPClient.sendServerMessage(controlMessage);
+		try {
+			synchronized(ClientData.mainThread)
+			{
+				ClientData.mainThread.wait();
+			}
+		} catch (InterruptedException e3) {
+			e3.printStackTrace();
+		}
+		//while(!ClientData.mainThread.interrupted());
+		TCPClient.control = false;
 	}
 }
