@@ -6,6 +6,7 @@ import org.gstreamer.Element;
 import org.gstreamer.ElementFactory;
 import org.gstreamer.Gst;
 import org.gstreamer.GstObject;
+import org.gstreamer.Message;
 import org.gstreamer.Pad;
 import org.gstreamer.Pipeline;
 import org.gstreamer.State;
@@ -398,18 +399,27 @@ public class ServerPipelineManager {
 	 * Return:
 	 */
 	protected void connect_to_signals()
-	{
+	{		
+		SM.data.pipe.getBus().connect(new Bus.MESSAGE() {
+			public void busMessage(Bus bus, Message msg) {
+				SM.data.pipeMsgThread = Thread.currentThread();
+				SM.data.pipe.getBus().disconnect(new Bus.MESSAGE() {
+					public void busMessage(Bus bus, Message msg) {
+					}
+				});
+			}
+		});
+		
+		/*
 		SM.data.pipe.getBus().connect(new Bus.ASYNC_DONE() {
 			public void asyncDone(GstObject source) {
-				System.err.println("This thread " + Thread.currentThread().getId());
 				synchronized(SM.data.pipeMsgThread)
 				{
 					SM.data.pipeMsgThread.notify();
 				}
-				//System.err.println("Main thread" + SM.data.mainThread.getId());
-				//System.err.println("Server thread" + SM.data.serverThread.getId());
 			}
 		});
+		*/
 		
 		//connect to signal EOS
 		SM.data.pipe.getBus().connect(new Bus.EOS() {
@@ -430,9 +440,16 @@ public class ServerPipelineManager {
 		//connect to change of state
 		SM.data.pipe.getBus().connect(new Bus.STATE_CHANGED() {
 			public void stateChanged(GstObject source, State oldstate, State newstate, State pending) {
-				SM.data.pipeMsgThread = Thread.currentThread();
 				if(source.equals(SM.data.pipe))
 				{
+					if(SM.data.notify)
+					{
+						synchronized(SM.data.pipeMsgThread)
+						{
+							SM.data.pipeMsgThread.notify();
+						}
+						SM.data.notify = false;
+					}
 					System.out.printf("[%s] changed state from %s to %s\n", source.getName(), oldstate.toString(), newstate.toString());
 				}
 			}

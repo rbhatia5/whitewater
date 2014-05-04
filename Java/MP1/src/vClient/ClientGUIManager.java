@@ -285,7 +285,7 @@ public class ClientGUIManager {
 						e1.printStackTrace();
 					}
 					TCPClient.sendServerMessage(activityMsg);
-
+					
 					playButton.doClick();
 				}
 			}

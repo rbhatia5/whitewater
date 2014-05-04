@@ -88,7 +88,7 @@ public class TCPServer implements Runnable{
 					Thread serverThread = new Thread(server);
 					RequestServer.servers.add(serverThread);
 					serverThread.start();
-						
+					
 					Message response = new Message();
 					response.setSender("SV00"); 
 					response.setType(MessageType.RESPONSE); 
@@ -119,13 +119,22 @@ public class TCPServer implements Runnable{
 						if(negotiate())
 						{
 							SM.data.state = ServerData.State.STREAMING;
+							SM.data.mainThread.interrupt();
+
+							synchronized(SM.data.mainThread)
+							{
+								try {
+									SM.data.mainThread.wait();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+							}
+					
 							Message msg = new Message();
-							
 							msg.setSender("SV00"); 
 							msg.setType(MessageType.RESPONSE); 
 							msg.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
 							outToClient.writeBytes(msg.stringify() + "\n");
-							SM.data.mainThread.interrupt();
 						}
 						else
 						{
@@ -237,28 +246,17 @@ public class TCPServer implements Runnable{
 		
 		if(action.equals(Message.PLAY_ACTION))
 		{
-			System.err.println(SM.data.pipeMsgThread.getId());
 			synchronized(SM.data.pipeMsgThread)
 			{
+				SM.data.notify = true;
 				SM.data.pipe.setState(State.PLAYING);
 				try {
 					SM.data.pipeMsgThread.wait();
-					System.err.println("HERE1");
+					System.err.println("PLAY");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
-			/*
-			while(!SM.data.pipe.getState().equals(State.PLAYING))
-			{
-				System.err.println(SM.data.pipe.setState(State.PLAYING).toString());
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			*/
 			if(SM.data.position != 0)
 			{
 				boolean success = SM.data.pipe.seek(SM.data.position, TimeUnit.SECONDS);
@@ -270,13 +268,32 @@ public class TCPServer implements Runnable{
 		}
 		else if(action.equals(Message.PAUSE_ACTION))
 		{
-			SM.data.fakeSink.setState(State.PAUSED);
-			StateChangeReturn ret = SM.data.pipe.setState(State.PAUSED);
-			System.out.println(ret.toString());
+			synchronized(SM.data.pipeMsgThread)
+			{
+				SM.data.notify = true;
+				SM.data.pipe.setState(State.PAUSED);
+				try {
+					SM.data.pipeMsgThread.wait();
+					System.err.println("PAUSE");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			//SM.data.fakeSink.setState(State.PAUSED);
 		}
 		else if(action.equals(Message.STOP_ACTION))
 		{
-			StateChangeReturn ret = SM.data.pipe.setState(State.NULL);
+			synchronized(SM.data.pipeMsgThread)
+			{
+				SM.data.notify = true;
+				SM.data.pipe.setState(State.NULL);
+				try {
+					SM.data.pipeMsgThread.wait();
+					System.err.println("STOP");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 			quit = true;
 		}
 		else if(action.equals(Message.FAST_FORWARD_ACTION))

@@ -20,6 +20,7 @@ public class vServerManager implements Runnable {
 	}
 
 	public void run() {
+		
 		quit = false;
 		data.mainThread = Thread.currentThread();
 		data.state = ServerData.State.NEGOTIATING;
@@ -39,7 +40,11 @@ public class vServerManager implements Runnable {
 		SPM.modify_pipeline();
 		data.pipe.setState(State.READY);
 		
-		//Gst.main();
+		synchronized(data.mainThread)
+		{
+			notify();
+		}
+		
 		while(!quit);
 		System.out.println("SERVER: Destroying Server " + Thread.currentThread().getId());
 	}

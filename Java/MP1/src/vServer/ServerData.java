@@ -58,6 +58,7 @@ public class ServerData {
 	protected Long position;
 	protected Thread serverThread;
 	protected Thread pipeMsgThread;
+	protected boolean notify;
 	
 	public String getIpAddress() {
 		return ipAddress;
