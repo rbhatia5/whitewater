@@ -30,7 +30,6 @@ public class ClientGUIManager {
 			public void actionPerformed(ActionEvent e) {
 				if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
 				{
-					//first request ports, then negotiate properties
 					System.out.println("CLIENT: Requesting Server");
 					ClientData.data[ClientData.activeWindow].comPort = 5000;
 					Message portRequest = new Message();
@@ -79,11 +78,8 @@ public class ClientGUIManager {
 					ClientData.data[ClientData.activeWindow].udpAudioAppSink.setState(State.PLAYING);
 					ClientData.data[ClientData.activeWindow].audioOutAppsink.setState(State.PLAYING);
 				}
-				//ClientData.appSink.setState(State.PLAYING);
 				ClientData.rate = 1;
-
 				Message play = new Message(MessageType.CONTROL);
-
 				try {
 					play.setSender("VC00");
 					play.addData(Message.ACTION_KEY, Message.PLAY_ACTION);
@@ -91,10 +87,7 @@ public class ClientGUIManager {
 				} catch (JSONException e1) {
 					e1.printStackTrace();
 				}
-
-				//TCPClient.sendServerMessage(play);
-				TCPClient.controlMessage(play);
-
+				TCPClient.sendServerMessage(play);
 			}					
 		});
 
@@ -104,23 +97,15 @@ public class ClientGUIManager {
 		{
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Setting state to paused");
-				//ClientData.pipe.setState(State.PAUSED);
-
-				//TCPClient.sendServerMessage("pause");
-
+				ClientData.data[ClientData.activeWindow].pipe.setState(State.PAUSED);
 				Message pause = new Message(MessageType.CONTROL);
-
 				try {
 					pause.setSender("VC00");
 					pause.addData(Message.ACTION_KEY, Message.PAUSE_ACTION);
-
 				} catch (JSONException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-
-				//TCPClient.sendServerMessage(pause);
-				TCPClient.controlMessage(pause);
+				TCPClient.sendServerMessage(pause);
 			}					
 		});
 
@@ -132,24 +117,13 @@ public class ClientGUIManager {
 				System.out.println("Setting state to ready");
 				ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
 				Message stop = new Message(MessageType.CONTROL);
-
 				try {
 					stop.setSender("VC00");
 					stop.addData(Message.ACTION_KEY, Message.STOP_ACTION);
-
 				} catch (JSONException e1) {
 					e1.printStackTrace();
 				}
-
-				//TCPClient.sendServerMessage(stop);
-				TCPClient.controlMessage(stop);
-				/*
-				try {
-					Thread.sleep(2000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-				*/
+				TCPClient.sendServerMessage(stop);
 				ClientData.data[ClientData.activeWindow].state = ClientData.State.REQUESTING;
 			}					
 		});
@@ -158,10 +132,7 @@ public class ClientGUIManager {
 		JButton fastForwardButton = new JButton("Fastforward");
 		fastForwardButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				//TCPClient.sendServerMessage("fastforward");
-
 				Message ff = new Message(MessageType.CONTROL);
-
 				try {
 					ff.setSender("VC00");
 					ff.addData(Message.ACTION_KEY, Message.FAST_FORWARD_ACTION);
@@ -169,7 +140,6 @@ public class ClientGUIManager {
 				} catch (JSONException e1) {
 					e1.printStackTrace();
 				}
-
 				TCPClient.sendServerMessage(ff);
 			}
 		});
@@ -178,21 +148,14 @@ public class ClientGUIManager {
 		JButton rewindButton = new JButton("Rewind");
 		rewindButton.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				//TCPClient.sendServerMessage("rewind");
-
 				Message rw = new Message(MessageType.CONTROL);
-
 				try {
 					rw.setSender("VC00");
 					rw.addData(Message.ACTION_KEY, Message.REWIND_ACTION);
-
 				} catch (JSONException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-
 				TCPClient.sendServerMessage(rw);
-
 			}
 		});
 
@@ -294,8 +257,7 @@ public class ClientGUIManager {
 						System.err.println("CLIENT: Could not create activity change request");
 						e1.printStackTrace();
 					}
-					//TCPClient.sendServerMessage(activityMsg);
-					TCPClient.controlMessage(activityMsg);
+					TCPClient.sendServerMessage(activityMsg);
 					
 					try {
 						String position = (String) ClientData.serverMessage.getData(Message.POSITION_KEY);
@@ -322,8 +284,8 @@ public class ClientGUIManager {
 						System.err.println("CLIENT: Could not create activity change request");
 						e1.printStackTrace();
 					}
-					TCPClient.controlMessage(activityMsg);
-					
+					TCPClient.sendServerMessage(activityMsg);
+
 					playButton.doClick();
 				}
 			}

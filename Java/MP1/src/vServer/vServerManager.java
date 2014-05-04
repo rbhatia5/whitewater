@@ -15,7 +15,8 @@ public class vServerManager implements Runnable {
 	public void initializeTCPServer(int port, TCPServer.TYPE type)
 	{
 		TCPServer server = new TCPServer(this, port, type);
-		new Thread(server).start();
+		data.serverThread = new Thread(server);
+		data.serverThread.start();
 	}
 
 	public void run() {

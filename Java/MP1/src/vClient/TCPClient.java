@@ -19,18 +19,19 @@ public class TCPClient implements Runnable{
 	 * Parameters:
 	 * Return:
 	 */
-	public static void sendServerMessage(String message)
-	{
-		TCPClient client = new TCPClient(message);
-		Thread clientThread = new Thread(client);
-		clientThread.start();
-	}
-	
 	public static void sendServerMessage(Message msg)
 	{
 		TCPClient client = new TCPClient(msg);
 		Thread clientThread = new Thread(client);
 		clientThread.start();
+		try {
+			synchronized(clientThread)
+			{
+				clientThread.wait();
+			}
+		} catch (InterruptedException e3) {
+			e3.printStackTrace();
+		}
 	}
 	
 	TCPClient(String message)
@@ -77,19 +78,15 @@ public class TCPClient implements Runnable{
 			{
 				System.out.println("CLIENT: Beginning negotiation");
 				ClientData.data[ClientData.activeWindow].state = ClientData.State.NEGOTIATING;
-				if(!control)
-					ClientData.mainThread.interrupt();
 			}
 			else if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.NEGOTIATING))
 			{
 				System.out.println("CLIENT: Beginning streaming");
 				ClientData.data[ClientData.activeWindow].state = ClientData.State.STREAMING;
-				if(!control)
-					ClientData.mainThread.interrupt();
 			}
-			if(control)
+			synchronized(this)
 			{
-				ClientData.mainThread.notify(); 
+				notify();
 			}
 		}
 		catch (IOException e)
@@ -112,10 +109,7 @@ public class TCPClient implements Runnable{
 	 */
 	public static boolean negotiateProperties(Message properties)
 	{		
-		control = false;
 		TCPClient.sendServerMessage(properties);
-		//TCPClient.controlMessage(properties);
-		while(!ClientData.mainThread.interrupted());
 		
 		if(ClientData.serverMessage.getType() != Message.MessageType.RESPONSE)
 			return false;
@@ -147,31 +141,12 @@ public class TCPClient implements Runnable{
 	
 	public static void requestPort(Message portRequest)
 	{
-		control = false;
-		//TCPClient.sendServerMessage(portRequest);
-		TCPClient.controlMessage(portRequest);
-		//while(!ClientData.mainThread.interrupted());
+		TCPClient.sendServerMessage(portRequest);
 		try {
 			Integer serverNumber = (Integer) ClientData.serverMessage.getData(Message.PORT_REQUEST_KEY);  
 			ClientData.data[ClientData.activeWindow].setPorts(serverNumber);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	public static void controlMessage(Message controlMessage)
-	{
-		TCPClient.control = true;
-		TCPClient.sendServerMessage(controlMessage);
-		try {
-			synchronized(ClientData.mainThread)
-			{
-				ClientData.mainThread.wait();
-			}
-		} catch (InterruptedException e3) {
-			e3.printStackTrace();
-		}
-		//while(!ClientData.mainThread.interrupted());
-		TCPClient.control = false;
 	}
 }

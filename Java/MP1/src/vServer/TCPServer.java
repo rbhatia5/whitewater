@@ -237,30 +237,33 @@ public class TCPServer implements Runnable{
 		
 		if(action.equals(Message.PLAY_ACTION))
 		{
-			/*
-			while(!SM.data.pipe.getState().equals(State.PLAYING))
+			System.err.println(SM.data.pipeMsgThread.getId());
+			synchronized(SM.data.pipeMsgThread)
 			{
 				SM.data.pipe.setState(State.PLAYING);
 				try {
-					Thread.sleep(5);
+					SM.data.pipeMsgThread.wait();
+					System.err.println("HERE1");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-			}*/
-			//while(SM.data.pipe.setState(State.PLAYING).equals(StateChangeReturn.FAILURE));
-			
-			SM.data.pipe.setState(State.PLAYING);
-			/*	try {
+			}
+			/*
+			while(!SM.data.pipe.getState().equals(State.PLAYING))
+			{
+				System.err.println(SM.data.pipe.setState(State.PLAYING).toString());
+				try {
 					Thread.sleep(500);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+			}
 			*/
 			if(SM.data.position != 0)
 			{
 				boolean success = SM.data.pipe.seek(SM.data.position, TimeUnit.SECONDS);
-				System.out.println("SERVER seek " + success);
+				if(!success)
+					System.err.println("SERVER seek to " + SM.data.position);
 			}
 			SM.data.setRate(SM.data.pipe, 1); 
 			SM.data.fakeSink.setState(State.PLAYING);
