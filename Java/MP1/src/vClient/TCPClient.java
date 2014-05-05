@@ -49,12 +49,12 @@ public class TCPClient implements Runnable{
 		try
 		{
 			System.out.println("CLIENT: Initializing socket port " + ClientData.data[ClientData.activeWindow].comPort);
-			Socket socket = new Socket();
+			Socket socket = null;
 			while(true)
 			{
 				try
 				{
-					socket.connect( new InetSocketAddress(ClientData.data[ClientData.activeWindow].serverAddress, ClientData.data[ClientData.activeWindow].comPort), 5000);
+					socket = new Socket(ClientData.data[ClientData.activeWindow].serverAddress, ClientData.data[ClientData.activeWindow].comPort);
 				} catch (ConnectException ignore){};
 				if(socket != null)
 					break;
