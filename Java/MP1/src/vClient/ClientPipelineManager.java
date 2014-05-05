@@ -430,7 +430,7 @@ ACTIVE MODE
 		//Link sometimes pads on RTPBin
 		ClientData.data[ClientData.activeWindow].rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
-				System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
+				System.out.println("Pad added: recv_rtp_src_0");
 				if(newPad.getName().contains("recv_rtp_src_0"))
 				{
 					Pad depaySink = ClientData.data[ClientData.activeWindow].pipe.getElementByName("video-depay").getStaticPad("sink");
@@ -444,7 +444,7 @@ ACTIVE MODE
 
 		ClientData.data[ClientData.activeWindow].rtpBin.connect(new Element.PAD_ADDED() {
 			public void padAdded(Element source, Pad newPad) {
-				System.out.printf("New pad %s added to %s\n", newPad.toString(), source.toString());
+				System.out.println("Pad added: recv_rtp_src_1");
 				if(newPad.getName().contains("recv_rtp_src_1"))
 				{
 					Pad depaySink = ClientData.data[ClientData.activeWindow].pipe.getElementByName("audio-depay").getStaticPad("sink");
@@ -455,39 +455,7 @@ ACTIVE MODE
 				}
 			}
 		});
-
-		//For fetching RTCP packets
-		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_NEW_SSRC() {
-			public void onNewSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
-				//System.out.printf("1 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
-				//Pointer session = new Pointer(sessionid);
-				//System.out.println(session.toString());
-				//rtpBin.emit("get-internal-session", sessionid, session.getPointer(0));
-				//System.out.println("SDES OBJ: " + sdesObj);
-				//Pointer sessionObj = GObjectAPI.GOBJECT_API.g_object_new(GType.POINTER, sdesObj);
-				//System.out.println("HERE" + sessionObj.toString());
-			}
-		});
-
-		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_SSRC_SDES() {
-			public void onSsrcSdes(RTPBin rtpBin, int sessionid, int ssrc) {
-				//System.out.printf("2 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
-			}
-		});
-
-		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
-			public void onSsrcActive(RTPBin rtpBin, int sessionid, int ssrc) {
-				//System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
-			}
-		});
-
-		ClientData.data[ClientData.activeWindow].rtpBin.connect(new RTPBin.ON_BYE_SSRC() {
-			public void onByeSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
-				System.out.printf("4 : RTCP packet received BYE from ssrc: %s session: %s\n", ssrc, sessionid);
-			}
-		});
 	}
-
 
 	static void pullUdpVidBuff(Buffer buffer) {
 

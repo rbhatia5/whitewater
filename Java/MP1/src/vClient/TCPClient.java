@@ -84,9 +84,9 @@ public class TCPClient implements Runnable{
 				System.out.println("CLIENT: Beginning streaming");
 				ClientData.data[ClientData.activeWindow].state = ClientData.State.STREAMING;
 			}
-			synchronized(this)
+			synchronized(Thread.currentThread())
 			{
-				notify();
+				Thread.currentThread().notify();
 			}
 		}
 		catch (IOException e)

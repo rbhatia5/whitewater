@@ -164,20 +164,6 @@ public class TCPServer implements Runnable{
 						response.addData(Message.POSITION_KEY, Long.toString(SM.data.position));
 						outToClient.writeBytes(response.stringify() + '\n');
 					}
-					/*
-					try {
-						adaptPipeline();
-						Message response = new Message (MessageType.RESPONSE);
-						response.setSender("SV00");
-						response.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
-						outToClient.writeBytes(response.stringify() + '\n');
-						//if(quit)
-						//	SM.quit = true;
-					} catch (JSONException e) {
-						e.printStackTrace();
-						System.err.println("could not send rseponse to client");
-					}
-					*/
 				}
 			}
 		} catch (IOException e) {
@@ -252,7 +238,7 @@ public class TCPServer implements Runnable{
 				SM.data.pipe.setState(State.PLAYING);
 				try {
 					SM.data.pipeMsgThread.wait();
-					if(SM.data.pipe.getState().equals(State.PLAYING))
+					if(SM.data.pipe.getState(5,TimeUnit.SECONDS).equals(State.PLAYING))
 						System.err.println("PLAY");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -275,7 +261,7 @@ public class TCPServer implements Runnable{
 				SM.data.pipe.setState(State.PAUSED);
 				try {
 					SM.data.pipeMsgThread.wait();
-					if(SM.data.pipe.getState().equals(State.PAUSED))
+					if(SM.data.pipe.getState(5,TimeUnit.SECONDS).equals(State.PAUSED))
 						System.err.println("PAUSE");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -290,7 +276,7 @@ public class TCPServer implements Runnable{
 				SM.data.pipe.setState(State.NULL);
 				try {
 					SM.data.pipeMsgThread.wait();
-					if(SM.data.pipe.getState().equals(State.NULL))
+					if(SM.data.pipe.getState(5,TimeUnit.SECONDS).equals(State.NULL))
 						System.err.println("STOP");
 				} catch (InterruptedException e) {
 					e.printStackTrace();

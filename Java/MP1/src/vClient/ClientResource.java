@@ -22,10 +22,11 @@ public class ClientResource {
 	private static ClientResource instance = null; 
 	protected int bandwidth;
 	protected String filepath;
+	protected int utilizedBandwidth;
 	
 	protected ClientResource()
 	{
-		
+		utilizedBandwidth = 0;
 	}
 	public static ClientResource getInstance()
 	{
@@ -49,6 +50,7 @@ public class ClientResource {
 	{
 		if(newband >= 0)
 			bandwidth = newband; 
+		utilizedBandwidth += bandwidth;
 		writeToFile();
 	}
 	

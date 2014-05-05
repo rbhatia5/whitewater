@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.*;
 
@@ -31,6 +32,7 @@ public class ClientGUIManager {
 			public void actionPerformed(ActionEvent e) {
 				if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
 				{
+					ClientResource.getInstance().adjustResources(ClientData.getProposedBandwidth());
 					System.out.println("CLIENT: Requesting Server");
 					ClientData.data[ClientData.activeWindow].comPort = 5000;
 					Message portRequest = new Message();
@@ -56,7 +58,10 @@ public class ClientGUIManager {
 					boolean result = TCPClient.negotiateProperties(streamRequest);
 
 					if(result)
+					{
+						ClientData.utilizedBandwidth += ClientData.FrameRes.getFrameSize()*8;
 						ClientPipelineManager.modify_pipeline();
+					}
 				}
 				else {
 					System.err.println("Client Resource Admission Failed");
@@ -70,7 +75,7 @@ public class ClientGUIManager {
 		playButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				if(!ClientData.data[ClientData.activeWindow].pipe.getState().equals(State.PLAYING))
+				if(!ClientData.data[ClientData.activeWindow].pipe.getState(5,TimeUnit.SECONDS).equals(State.PLAYING))
 				{
 					System.out.println("Setting state to playing");
 					ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
@@ -100,7 +105,7 @@ public class ClientGUIManager {
 		pauseButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				if(!ClientData.data[ClientData.activeWindow].pipe.getState().equals(State.PAUSED))
+				if(!ClientData.data[ClientData.activeWindow].pipe.getState(5,TimeUnit.SECONDS).equals(State.PAUSED))
 				{
 					System.out.println("Setting state to paused");
 					ClientData.data[ClientData.activeWindow].pipe.setState(State.PAUSED);
@@ -121,7 +126,7 @@ public class ClientGUIManager {
 		stopButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				if(!ClientData.data[ClientData.activeWindow].pipe.getState().equals(State.NULL))
+				if(!ClientData.data[ClientData.activeWindow].pipe.getState(5,TimeUnit.SECONDS).equals(State.NULL))
 				{
 					System.out.println("Setting state to ready");
 					ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
@@ -266,7 +271,11 @@ public class ClientGUIManager {
 					if(ClientData.data[1-ClientData.activeWindow].mode.equals(ClientData.Mode.PASSIVE))
 						ClientData.setMode(ClientData.Mode.ACTIVE);
 					else
+					{
 						JOptionPane.showMessageDialog(ClientData.frame, "Both windows cannot be active", "Activity Error", JOptionPane.ERROR_MESSAGE);
+						JComboBox aORp = (JComboBox) ClientData.optionsComponents.get(1);
+						aORp.setSelectedIndex(1);
+					}
 				}
 				else
 					ClientData.setMode(ClientData.Mode.PASSIVE);
@@ -378,9 +387,14 @@ public class ClientGUIManager {
 					try {
 						int newRes = Integer.parseInt(s);
 						ClientResource.getInstance().setBandwidth(newRes);
-
-					}catch(NumberFormatException n)
-					{}
+						//if we now have fewer resources than available
+						if(!ClientResource.getInstance().checkForResource(114))
+						{
+							//reduce the framerate of the less prioritized pipeline
+							System.err.println("Reducing framerate of stream " + (1- ClientData.activeWindow));
+						}
+					} catch(NumberFormatException n)
+					{ }
 				}
 			}
 		});

@@ -8,6 +8,7 @@ import org.gstreamer.Gst;
 import org.gstreamer.GstObject;
 import org.gstreamer.Message;
 import org.gstreamer.Pad;
+import org.gstreamer.PadLinkReturn;
 import org.gstreamer.Pipeline;
 import org.gstreamer.State;
 import org.gstreamer.elements.good.RTPBin;
@@ -107,10 +108,13 @@ public class ServerPipelineManager {
 		Element avidemux 		= ElementFactory.make("avidemux", "avi-demux");
 		Element queue1 			= ElementFactory.make("queue", "avimux-queue");
 		Element videoDecodeBin2 = ElementFactory.make("decodebin2", "video-decodebin2");
+		Element videorate		= ElementFactory.make("videorate", "video-rate");
+		Element videoscale		= ElementFactory.make("videoscale", "video-scale");
 		Element autoconvert 	= ElementFactory.make("autoconvert", "video-convert");
 		Element encoder 		= ElementFactory.make("ffenc_h263", "h263-encoder");
 		Element videopay 		= ElementFactory.make("rtph263pay", "video-pay");
 		Element audioDecodeBin2 = ElementFactory.make("decodebin2", "audio-decodebin2");
+		Element queue2 			= ElementFactory.make("queue", "audio-queue");
 		Element audioconvert 	= ElementFactory.make("audioconvert", "audio-convert");
 		Element speexenc 		= ElementFactory.make("speexenc", "speex-enc");
 		Element audiopay 		= ElementFactory.make("rtpspeexpay", "audio-pay");
@@ -135,35 +139,17 @@ public class ServerPipelineManager {
 
 		if(SM.data.activity.equals("Active")){
 
-			SM.data.pipe.addMany(source, avidemux, queue1, videoDecodeBin2, autoconvert, encoder, videopay, audioDecodeBin2, audioconvert, speexenc, audiopay, SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink, udpRTPASink, udpRTCPASrc, udpRTCPASink);
-
-			if(!Element.linkMany(source, avidemux))
-				System.err.println("Could not link file source to mux");
-			//if(!Element.linkMany(queue1, videoDecodeBin2, autoconvert, encoder, videopay))
-
-			if(!Element.linkMany(queue1, videoDecodeBin2))
-				System.err.println("Could not link queue -> decodebin");
-			if(!Element.linkMany(videoDecodeBin2, autoconvert))
-				System.err.println("Could not link videoDecodeBin2 -> autoconvert");
-			if(!Element.linkMany(autoconvert, encoder))
-				System.err.println("Could not link autoconvert -> encoder");
-			if(!Element.linkMany(encoder, videopay))
-				System.err.println("Could not link encoder -> videopay");
+			SM.data.pipe.addMany(source, avidemux, queue1, videoDecodeBin2, videorate, videoscale, autoconvert, encoder, videopay, queue2, audioDecodeBin2, audioconvert, speexenc, audiopay, SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink, udpRTPASink, udpRTCPASrc, udpRTCPASink);
 
 			videoDecodeBin2.connect(new Element.PAD_ADDED() {
 				public void padAdded(Element source, Pad newPad) {
 					if(newPad.getName().contains("src"))
 					{
-						Pad autoSinkPad = SM.data.pipe.getElementByName("video-convert").getStaticPad("sink");
-						newPad.link(autoSinkPad);
-						System.out.println("Connected decodebin2");
-					}
-					else
-					{
-						System.err.println("Could not link videoDecodeBin2 -> autoconvert");
+						Pad autoSinkPad = SM.data.pipe.getElementByName("video-rate").getStaticPad("sink");
+						if(!newPad.link(autoSinkPad).equals(PadLinkReturn.OK))
+							System.err.println("Could not connect video decodebin2 -> video rate");
 					}
 				}
-
 			});
 
 			audioDecodeBin2.connect(new Element.PAD_ADDED() {
@@ -171,70 +157,25 @@ public class ServerPipelineManager {
 					if(newPad.getName().contains("src"))
 					{
 						Pad autoSinkPad = SM.data.pipe.getElementByName("audio-convert").getStaticPad("sink");
-						newPad.link(autoSinkPad);
-						System.out.println("Connected audiodecodebin");
-					}
-					else
-					{
-						System.err.println("Could not link audioDecodeBin -> audioconvert");
+						if(!newPad.link(autoSinkPad).equals(PadLinkReturn.OK))
+							System.err.println("Could not link audioDecodeBin -> audioconvert");
 					}
 				}
-
 			});
 
-
-			//System.err.println("Could not link queue -> decodebin -> auto convert -> encoder -> video pay");
-			if(!Element.linkMany(audioDecodeBin2, audioconvert))
-				System.err.println("Could not link decodebin -> audio convert");
-			if(!Element.linkMany(audioconvert, speexenc))
-				System.err.println("Could not link audio convert -> speex enc");
-			if(!Element.linkMany(speexenc, audiopay))
-				System.err.println("Could not link speex enc -> audio pay");
-
-
-			//String rateCapsStr = String.format("video/x-raw-yuv,framerate=%s/1", vServerManager.data.framerate);
-			//System.out.println(rateCapsStr);
-			//Caps rateCaps = Caps.fromString(rateCapsStr);
-
-			//String scaleCapsStr = String.format("video/x-raw-yuv,width=%s,height=%s", vServerManager.data.width, vServerManager.data.height);
-			//System.out.println(scaleCapsStr);
-			//Caps scaleCaps = Caps.fromString(scaleCapsStr);
-
-			//Link link-able elements
-			//Element.linkMany(source, videorate);
-			//if(!Element.linkPadsFiltered(videorate, "src", videoscale, "sink", rateCaps))
-			//	System.err.println("Could not connect videotestsrc -> videorate");
-			//if(!Element.linkPadsFiltered(videoscale, "src", encoder, "sink", scaleCaps))
-			//	System.err.println("Could not connect videorate -> videoscale");
-			//Element.linkMany(encoder, pay);
-			//Element.linkMany(source, encoder, pay);
-
-			source.set("location", "sample.avi");
-
-			udpRTPVSink.set("host", SM.data.clientIP);
-			udpRTPVSink.set("port", SM.data.videoRTP);
-			udpRTCPVSrc.set("port", SM.data.videoRTCPin);
-			udpRTCPVSink.set("host", SM.data.clientIP);
-			udpRTCPVSink.set("port", SM.data.videoRTCPout);
-
-			udpRTPASink.set("host", SM.data.clientIP);
-			udpRTPASink.set("port", SM.data.audioRTP);
-			udpRTCPASrc.set("port", SM.data.audioRTCPin);
-			udpRTCPASink.set("host", SM.data.clientIP);
-			udpRTCPASink.set("port", SM.data.audioRTCPout);
-
-			//Link sometimes pads manually
 			avidemux.connect(new Element.PAD_ADDED() {
 				public void padAdded(Element source, Pad newPad) {
 					if(newPad.getName().contains("video"))
 					{
 						Pad queueSinkPad = SM.data.pipe.getElementByName("avimux-queue").getStaticPad("sink");
-						newPad.link(queueSinkPad);
+						if(!newPad.link(queueSinkPad).equals(PadLinkReturn.OK))
+							System.err.println("Could not link demux_video -> video queue");
 					}
 					else if(newPad.getName().contains("audio"))
 					{
-						Pad decodebinSinkPad = SM.data.pipe.getElementByName("audio-decodebin2").getStaticPad("sink");
-						newPad.link(decodebinSinkPad);
+						Pad queueSinkPad = SM.data.pipe.getElementByName("audio-queue").getStaticPad("sink");
+						if(!newPad.link(queueSinkPad).equals(PadLinkReturn.OK))
+							System.err.println("Could not link demux_audio -> audio queue");
 					}
 				}
 			});
@@ -254,51 +195,99 @@ public class ServerPipelineManager {
 				}
 			});
 
-			//Link request pads manually
+			int bandwidth = ServerResource.getInstance().getBandwidth();
+			int numFrames = bandwidth/(704*576*8);
+			if(numFrames > 25)
+				numFrames = 25;
+			else if(numFrames < 15)
+				numFrames = 15;
+			
+			String rateCapsStr = String.format("video/x-raw-yuv,framerate=%s/1", numFrames);
+			Caps rateCaps = Caps.fromString(rateCapsStr);
+			String scaleCapsStr = "video/x-raw-yuv,width=704,height=576";
+			Caps scaleCaps = Caps.fromString(scaleCapsStr);
+			
+			if(!Element.linkMany(source, avidemux))
+				System.err.println("Could not link file source to mux");
+			if(!Element.linkMany(queue1, videoDecodeBin2))
+				System.err.println("Could not link queue -> decodebin");
+			if(!Element.linkMany(autoconvert, encoder))
+				System.err.println("Could not link autoconvert -> encoder");
+			if(!Element.linkMany(encoder, videopay))
+				System.err.println("Could not link encoder -> videopay");
+			
+			if(!Element.linkMany(queue2, audioDecodeBin2))
+				System.err.println("Could not link decodebin -> audio convert");
+			if(!Element.linkMany(audioconvert, speexenc))
+				System.err.println("Could not link audio convert -> speex enc");
+			if(!Element.linkMany(speexenc, audiopay))
+				System.err.println("Could not link speex enc -> audio pay");
+			
+			if(!Element.linkPadsFiltered(videorate, "src", videoscale, "sink", rateCaps))
+				System.err.println("Could not connect videorate -> videoscale");
+			if(!Element.linkPadsFiltered(videoscale, "src", autoconvert, "sink", scaleCaps))
+				System.err.println("Could not connect videoscale -> autoconvert");
+
+			source.set("location", "sample.avi");
+
+			udpRTPVSink.set("host", SM.data.clientIP);
+			udpRTPVSink.set("port", SM.data.videoRTP);
+			udpRTCPVSrc.set("port", SM.data.videoRTCPin);
+			udpRTCPVSink.set("host", SM.data.clientIP);
+			udpRTCPVSink.set("port", SM.data.videoRTCPout);
+
+			udpRTPASink.set("host", SM.data.clientIP);
+			udpRTPASink.set("port", SM.data.audioRTP);
+			udpRTCPASrc.set("port", SM.data.audioRTCPin);
+			udpRTCPASink.set("host", SM.data.clientIP);
+			udpRTCPASink.set("port", SM.data.audioRTCPout);
+
 			Pad send_rtp_sink_0 = SM.data.rtpBin.getRequestPad("send_rtp_sink_0");
 			Pad paySrcPad = videopay.getStaticPad("src");
 			if(send_rtp_sink_0 == null || paySrcPad == null)
 				System.err.println("Could not create rtpbin.send_rtp_sink_0 or pay.src pad");
-			paySrcPad.link(send_rtp_sink_0);
+			if(!paySrcPad.link(send_rtp_sink_0).equals(PadLinkReturn.OK))
+				System.err.println("Could not link video pay -> send_rtp_sink_0");
 
 			Pad send_rtcp_src_0 = SM.data.rtpBin.getRequestPad("send_rtcp_src_0");
 			Pad udpSinkPadRTCP = udpRTCPVSink.getStaticPad("sink");
 			if(send_rtcp_src_0 == null || udpSinkPadRTCP == null)
 				System.err.println("Could not create rtpbin.send_rtcp_src_0 or udp.src pad");
-			send_rtcp_src_0.link(udpSinkPadRTCP);
-
+			if(!send_rtcp_src_0.link(udpSinkPadRTCP).equals(PadLinkReturn.OK))
+				System.err.println("Could not link sent_rtp_sink_0 -> udp RTCP vid sink");
+				
 			Pad recv_rtcp_sink_0 = SM.data.rtpBin.getRequestPad("recv_rtcp_sink_0");
 			Pad udpSrcPadRTCP = udpRTCPVSrc.getStaticPad("src");
-			udpSrcPadRTCP.link(recv_rtcp_sink_0);
+			if(!udpSrcPadRTCP.link(recv_rtcp_sink_0).equals(PadLinkReturn.OK))
+				System.err.println("Could not link udp RTCP vid src -> recv_rtcp_sink_0");
 
 			Pad send_rtp_sink_1 = SM.data.rtpBin.getRequestPad("send_rtp_sink_1");
 			Pad audioPaySrcPad = audiopay.getStaticPad("src");
 			if(send_rtp_sink_1 == null || audioPaySrcPad == null)
 				System.err.println("Could not create rtpbin.send_rtp_sink_1 or pay.src pad");
-			audioPaySrcPad.link(send_rtp_sink_1);
+			if(!audioPaySrcPad.link(send_rtp_sink_1).equals(PadLinkReturn.OK))
+				System.err.println("Could not link audio pay -> send_rtp_sink_1");
 
 			Pad send_rtcp_src_1 = SM.data.rtpBin.getRequestPad("send_rtcp_src_1");
 			Pad udpAudioSinkPadRTCP = udpRTCPASink.getStaticPad("sink");
 			if(send_rtcp_src_1 == null || udpAudioSinkPadRTCP == null)
 				System.err.println("Could not create rtpbin.send_rtcp_src_1 or udp.src pad");
-			send_rtcp_src_1.link(udpAudioSinkPadRTCP);
+			if(!send_rtcp_src_1.link(udpAudioSinkPadRTCP).equals(PadLinkReturn.OK))
+				System.err.println("Could not link sent_rtp_sink_1 -> udp RTCP aud sink");
 
 			Pad recv_rtcp_sink_1 = SM.data.rtpBin.getRequestPad("recv_rtcp_sink_1");
 			Pad udpAudioSrcPadRTCP = udpRTCPASrc.getStaticPad("src");
-			udpAudioSrcPadRTCP.link(recv_rtcp_sink_1);
+			if(!udpAudioSrcPadRTCP.link(recv_rtcp_sink_1).equals(PadLinkReturn.OK))
+				System.err.println("Could not link sent_rtp_sink_1 -> udp RTCP aud src");
 
 		}else if(SM.data.activity.equals("Passive")){
 
-			SM.data.pipe.addMany(source, avidemux, queue1, videoDecodeBin2, autoconvert, encoder, videopay,SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink, fakesink);
+			SM.data.pipe.addMany(source, avidemux, queue1, videoDecodeBin2, videorate, videoscale, autoconvert, encoder, videopay,SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink, fakesink);
 
 			if(!Element.linkMany(source, avidemux))
 				System.err.println("Could not link file source to mux");
-			//if(!Element.linkMany(queue1, videoDecodeBin2, autoconvert, encoder, videopay))
-
 			if(!Element.linkMany(queue1, videoDecodeBin2))
 				System.err.println("Could not link queue -> decodebin");
-			if(!Element.linkMany(videoDecodeBin2, autoconvert))
-				System.err.println("Could not link videoDecodeBin2 -> autoconvert");
 			if(!Element.linkMany(autoconvert, encoder))
 				System.err.println("Could not link autoconvert -> encoder");
 			if(!Element.linkMany(encoder, videopay))
@@ -308,33 +297,22 @@ public class ServerPipelineManager {
 				public void padAdded(Element source, Pad newPad) {
 					if(newPad.getName().contains("src"))
 					{
-						Pad autoSinkPad = SM.data.pipe.getElementByName("video-convert").getStaticPad("sink");
+						Pad autoSinkPad = SM.data.pipe.getElementByName("video-rate").getStaticPad("sink");
 						newPad.link(autoSinkPad);
-						System.out.println("Connected decodebin2");
 					}
 				}
-
 			});
 
-
-
-			String rateCapsStr = String.format("video/x-raw-yuv,framerate=%s/1", SM.data.framerate);
-			System.out.println(rateCapsStr);
+			String rateCapsStr = "video/x-raw-yuv,framerate=10/1";
 			Caps rateCaps = Caps.fromString(rateCapsStr);
-
-			//String scaleCapsStr = String.format("video/x-raw-yuv,width=%s,height=%s", vServerManager.data.width, vServerManager.data.height);
-			//System.out.println(scaleCapsStr);
-			//Caps scaleCaps = Caps.fromString(scaleCapsStr);
-
-			//Link link-able elements
-			//Element.linkMany(source, videorate);
-			//if(!Element.linkPadsFiltered(videorate, "src", videoscale, "sink", rateCaps))
-			//	System.err.println("Could not connect videotestsrc -> videorate");
-			//if(!Element.linkPadsFiltered(videoscale, "src", encoder, "sink", scaleCaps))
-			//	System.err.println("Could not connect videorate -> videoscale");
-			//Element.linkMany(encoder, pay);
-			//Element.linkMany(source, encoder, pay);
-
+			if(!Element.linkPadsFiltered(videorate, "src", videoscale, "sink", rateCaps))
+				System.err.println("Could not linke video rate -> video scale");
+			
+			String scaleCapsStr = "video/x-raw-yuv,width=352,height=288";
+			Caps scaleCaps = Caps.fromString(scaleCapsStr);
+			if(!Element.linkPadsFiltered(videoscale, "src", autoconvert, "sink", scaleCaps))
+				System.err.println("Could not linke video scale -> video convert");
+			
 			source.set("location", "sample.avi");
 
 			udpRTPVSink.set("host", SM.data.clientIP);
@@ -354,8 +332,6 @@ public class ServerPipelineManager {
 					}else if(newPad.getName().contains("audio")){
 						Pad fakeSinkPad = SM.data.pipe.getElementByName("fake").getStaticPad("sink");
 						newPad.link(fakeSinkPad);
-						
-						System.out.println("connected audio... Not!!!");
 					}
 				}
 			});
@@ -452,25 +428,6 @@ public class ServerPipelineManager {
 					}
 					System.out.printf("[%s] changed state from %s to %s\n", source.getName(), oldstate.toString(), newstate.toString());
 				}
-			}
-		});
-
-		SM.data.rtpBin.connect(new RTPBin.ON_NEW_SSRC() {
-			public void onNewSsrc(RTPBin rtpBin, int sessionid, int ssrc) {
-				//System.out.printf("1 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
-			}
-		});
-
-		SM.data.rtpBin.connect(new RTPBin.ON_SSRC_SDES() {
-			public void onSsrcSdes(RTPBin rtpBin, int sessionid, int ssrc) {
-				//System.out.printf("2 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
-			}
-		});
-
-		SM.data.rtpBin.connect(new RTPBin.ON_SSRC_ACTIVE() {
-			public void onSsrcActive(RTPBin rtpBin, int sessionid, int ssrc) {
-				//System.out.printf("3 : RTCP packet received from ssrc: %s session: %s\n", ssrc, sessionid);
-				//Element rtpSession = vServerManager.data.rtpBin.getElementByName("rtpsession0");
 			}
 		});
 	}

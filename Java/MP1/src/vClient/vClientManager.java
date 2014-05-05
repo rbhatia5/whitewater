@@ -31,6 +31,7 @@ public class vClientManager {
 		ClientData.FrameRes.setRes("320x240");
 		ClientData.frameRate = 10;
 		ClientData.seek = false;
+		ClientData.utilizedBandwidth = 0;
 		
 		try {
 			ClientData.ipAddress = Inet4Address.getLocalHost().getHostAddress();

@@ -59,6 +59,7 @@ public class ClientData {
 	protected static Integer audBandwidth;
 	protected static long t;
 	protected static boolean muted;
+	protected static int utilizedBandwidth;
 	
 	public static String getIpAddress() {
 		return ipAddress;
