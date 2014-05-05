@@ -18,7 +18,10 @@ public class ClientPipelineManager{
 	public static final byte SDES = (byte)(202);
 	public static final byte BYE = (byte)(203);
 	public static final byte APP = (byte)(204);
+	
+	protected static boolean hasLastBuf = false;
 
+	protected static Buffer lastBuf = null;
 	/**
 	 * Author:
 	 * Purpose:
@@ -506,15 +509,33 @@ ACTIVE MODE
 	 */
 	static void pullWindowSinkBuff(Buffer buffer)
 	{
+		
 		if(buffer != null) {
+			
 			Caps caps = buffer.getCaps();
 			if(caps == null){
 				return;
 			}
 			Structure s = caps.getStructure(0);
-			Fraction fps = s.getFraction("framerate");
-			int intFps = (int)fps.toDouble();
-			ClientGUIManager.addTextToFramerateMonitor(Integer.toString(intFps));
+			//Fraction fps = s.getFraction("framerate");
+			//int intFps = (int)fps.toDouble();
+			
+			Double timediff;
+			
+			if(hasLastBuf)
+			{	
+				
+				timediff = (double) (buffer.getTimestamp().toNanos() - lastBuf.getTimestamp().toNanos()) ;
+			
+				Double fps = 1.0/(timediff); 
+				fps *= Math.pow(10, 9);
+				
+				System.out.printf(" Timestamp now: %s, Timestamp last: %s, Diff: %s, FPS: %s \n", buffer.getTimestamp(),lastBuf.getTimestamp() ,timediff, fps);
+			
+				ClientGUIManager.addTextToFramerateMonitor(Double.toString(Math.round(fps)));
+			}
+			lastBuf= buffer;
+			hasLastBuf = true;
 		}
 
 

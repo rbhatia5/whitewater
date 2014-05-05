@@ -69,7 +69,7 @@ public class vClientManager {
 				ClientData.frame.add(windows, BorderLayout.CENTER);
 				ClientData.frame.add(windowPicker, BorderLayout.NORTH);
 				
-				ClientData.frame.setSize(1080, 920);
+				ClientData.frame.setSize(1200, 500);
 				ClientData.frame.setVisible(true);
 	        } 
 	    });
