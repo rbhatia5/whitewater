@@ -51,13 +51,14 @@ public class ClientData {
 	protected static long encDecTime;
 	protected static String ipAddress;
 
-
-
-	public static JTextArea framerateMonitor;
-	
-	
-	
-	
+	protected static JTextArea framerateMonitor;
+	protected static JLabel bandwidth;
+	protected static JLabel framerate;
+	protected static JLabel jitter;
+	protected static Integer vidBandwidth;
+	protected static Integer audBandwidth;
+	protected static long t;
+	protected static boolean muted;
 	
 	public static String getIpAddress() {
 		return ipAddress;

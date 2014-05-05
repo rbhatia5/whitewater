@@ -43,5 +43,8 @@ public class GstData {
 	protected AppSink audioOutAppsink;
 	protected AppSink udpAudioAppSink;
 	
+	//for muting
+	protected Element volume;
+	
 	
 }

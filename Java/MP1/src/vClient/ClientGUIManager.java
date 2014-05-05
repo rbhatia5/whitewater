@@ -10,6 +10,7 @@ import javax.swing.*;
 import vNetwork.Message;
 import vNetwork.Message.MessageType;
 
+import org.gstreamer.Element;
 import org.gstreamer.State;
 import org.json.JSONException;
 
@@ -69,25 +70,28 @@ public class ClientGUIManager {
 		playButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				System.out.println("Setting state to playing");
-				ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
-				ClientData.data[ClientData.activeWindow].windowAppSink.setState(State.PLAYING);
-				ClientData.data[ClientData.activeWindow].udpVideoAppSink.setState(State.PLAYING);
-
-				if(ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.ACTIVE){
-					ClientData.data[ClientData.activeWindow].udpAudioAppSink.setState(State.PLAYING);
-					ClientData.data[ClientData.activeWindow].audioOutAppsink.setState(State.PLAYING);
+				if(!ClientData.data[ClientData.activeWindow].pipe.getState().equals(State.PLAYING))
+				{
+					System.out.println("Setting state to playing");
+					ClientData.data[ClientData.activeWindow].pipe.setState(State.PLAYING);
+					ClientData.data[ClientData.activeWindow].windowAppSink.setState(State.PLAYING);
+					ClientData.data[ClientData.activeWindow].udpVideoAppSink.setState(State.PLAYING);
+	
+					if(ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.ACTIVE){
+						ClientData.data[ClientData.activeWindow].udpAudioAppSink.setState(State.PLAYING);
+						ClientData.data[ClientData.activeWindow].audioOutAppsink.setState(State.PLAYING);
+					}
+					ClientData.rate = 1;
+					Message play = new Message(MessageType.CONTROL);
+					try {
+						play.setSender("VC00");
+						play.addData(Message.ACTION_KEY, Message.PLAY_ACTION);
+	
+					} catch (JSONException e1) {
+						e1.printStackTrace();
+					}
+					TCPClient.sendServerMessage(play);
 				}
-				ClientData.rate = 1;
-				Message play = new Message(MessageType.CONTROL);
-				try {
-					play.setSender("VC00");
-					play.addData(Message.ACTION_KEY, Message.PLAY_ACTION);
-
-				} catch (JSONException e1) {
-					e1.printStackTrace();
-				}
-				TCPClient.sendServerMessage(play);
 			}					
 		});
 
@@ -96,16 +100,19 @@ public class ClientGUIManager {
 		pauseButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				System.out.println("Setting state to paused");
-				ClientData.data[ClientData.activeWindow].pipe.setState(State.PAUSED);
-				Message pause = new Message(MessageType.CONTROL);
-				try {
-					pause.setSender("VC00");
-					pause.addData(Message.ACTION_KEY, Message.PAUSE_ACTION);
-				} catch (JSONException e1) {
-					e1.printStackTrace();
+				if(!ClientData.data[ClientData.activeWindow].pipe.getState().equals(State.PAUSED))
+				{
+					System.out.println("Setting state to paused");
+					ClientData.data[ClientData.activeWindow].pipe.setState(State.PAUSED);
+					Message pause = new Message(MessageType.CONTROL);
+					try {
+						pause.setSender("VC00");
+						pause.addData(Message.ACTION_KEY, Message.PAUSE_ACTION);
+					} catch (JSONException e1) {
+						e1.printStackTrace();
+					}
+					TCPClient.sendServerMessage(pause);
 				}
-				TCPClient.sendServerMessage(pause);
 			}					
 		});
 
@@ -114,17 +121,20 @@ public class ClientGUIManager {
 		stopButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				System.out.println("Setting state to ready");
-				ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
-				Message stop = new Message(MessageType.CONTROL);
-				try {
-					stop.setSender("VC00");
-					stop.addData(Message.ACTION_KEY, Message.STOP_ACTION);
-				} catch (JSONException e1) {
-					e1.printStackTrace();
+				if(!ClientData.data[ClientData.activeWindow].pipe.getState().equals(State.NULL))
+				{
+					System.out.println("Setting state to ready");
+					ClientData.data[ClientData.activeWindow].pipe.setState(State.NULL);
+					Message stop = new Message(MessageType.CONTROL);
+					try {
+						stop.setSender("VC00");
+						stop.addData(Message.ACTION_KEY, Message.STOP_ACTION);
+					} catch (JSONException e1) {
+						e1.printStackTrace();
+					}
+					TCPClient.sendServerMessage(stop);
+					ClientData.data[ClientData.activeWindow].state = ClientData.State.REQUESTING;
 				}
-				TCPClient.sendServerMessage(stop);
-				ClientData.data[ClientData.activeWindow].state = ClientData.State.REQUESTING;
 			}					
 		});
 
@@ -159,6 +169,17 @@ public class ClientGUIManager {
 			}
 		});
 
+		JButton muteButton = new JButton("Mute");
+		muteButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				if(ClientData.data[ClientData.activeWindow].mode.equals(ClientData.Mode.ACTIVE))
+				{
+					ClientData.muted = !ClientData.muted;
+					ClientData.data[ClientData.activeWindow].volume.set("mute", ClientData.muted);
+				}
+			}
+		});
+
 		JPanel controls = new JPanel();
 		controls.add(negotiateButton);
 		controls.add(playButton);
@@ -166,14 +187,16 @@ public class ClientGUIManager {
 		controls.add(stopButton);
 		controls.add(fastForwardButton);
 		controls.add(rewindButton);
-
+		controls.add(muteButton);
+		
 		ClientData.controlButtons.add(negotiateButton);
 		ClientData.controlButtons.add(playButton);
 		ClientData.controlButtons.add(pauseButton);
 		ClientData.controlButtons.add(stopButton);
 		ClientData.controlButtons.add(fastForwardButton);
 		ClientData.controlButtons.add(rewindButton);
-
+		ClientData.controlButtons.add(muteButton);
+		
 		GroupLayout layout = new GroupLayout(controls);
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
@@ -186,11 +209,10 @@ public class ClientGUIManager {
 						.addComponent(pauseButton)
 						.addComponent(fastForwardButton)
 						.addComponent(stopButton)
-						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED,
-								GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-								.addComponent(negotiateButton)
-						)
-				);				
+						.addComponent(muteButton)
+						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(negotiateButton)
+				));				
 		layout.setVerticalGroup(
 				layout.createSequentialGroup()
 				.addGroup(layout.createParallelGroup()
@@ -199,9 +221,9 @@ public class ClientGUIManager {
 						.addComponent(pauseButton)
 						.addComponent(fastForwardButton)
 						.addComponent(stopButton)
+						.addComponent(muteButton)
 						.addComponent(negotiateButton)
-						)
-				);
+				));
 		controls.setLayout(layout);
 		return controls;
 	}
@@ -229,8 +251,6 @@ public class ClientGUIManager {
 
 		ClientData.optionsComponents.add(serverIPField);
 
-
-
 		JLabel activity = new JLabel("Mode");
 		activity.setPreferredSize(new Dimension(150, 30));
 
@@ -242,9 +262,14 @@ public class ClientGUIManager {
 				JComboBox source = (JComboBox)e.getSource();
 				int selection = source.getSelectedIndex();
 				if(selection == 0)
-					ClientData.setMode(ClientData.Mode.ACTIVE);
+				{
+					if(ClientData.data[1-ClientData.activeWindow].mode.equals(ClientData.Mode.PASSIVE))
+						ClientData.setMode(ClientData.Mode.ACTIVE);
+					else
+						JOptionPane.showMessageDialog(ClientData.frame, "Both windows cannot be active", "Activity Error", JOptionPane.ERROR_MESSAGE);
+				}
 				else
-					ClientData.setMode( ClientData.Mode.PASSIVE);
+					ClientData.setMode(ClientData.Mode.PASSIVE);
 				
 				if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.STREAMING))
 				{
@@ -323,7 +348,6 @@ public class ClientGUIManager {
 		frCB.setPreferredSize(new Dimension(150,40));
 		frCB.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-
 				JComboBox source = (JComboBox)e.getSource();
 				int selected = source.getSelectedIndex();
 				if( ClientData.data[ClientData.activeWindow].mode == ClientData.Mode.PASSIVE)
@@ -356,11 +380,8 @@ public class ClientGUIManager {
 						ClientResource.getInstance().setBandwidth(newRes);
 
 					}catch(NumberFormatException n)
-					{
-						// do nothing.
-					}
+					{}
 				}
-
 			}
 		});
 
@@ -368,7 +389,6 @@ public class ClientGUIManager {
 		userOptions.setPreferredSize(new Dimension(200,200));
 		userOptions.add(resCB);
 		userOptions.add(frCB);
-		//userOptions.add(activity);
 		userOptions.add(activeOrPassive);
 		userOptions.add(editResources);
 
@@ -378,41 +398,25 @@ public class ClientGUIManager {
 
 		userOptionsLayout.setHorizontalGroup(
 				userOptionsLayout.createParallelGroup()
-				.addComponent(resLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-						GroupLayout.PREFERRED_SIZE)
-						.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-								.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-										.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-												.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-														GroupLayout.PREFERRED_SIZE)
-														.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-																GroupLayout.PREFERRED_SIZE)
-																.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-																		GroupLayout.PREFERRED_SIZE)
-																		.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-																				GroupLayout.PREFERRED_SIZE)
+				.addComponent(resLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				);
 		userOptionsLayout.setVerticalGroup(
 				userOptionsLayout.createSequentialGroup()
-				.addComponent(resLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-						GroupLayout.PREFERRED_SIZE)
-						.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-								.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-										.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-												.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-														GroupLayout.PREFERRED_SIZE)
-														.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-																GroupLayout.PREFERRED_SIZE)
-																.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-																		GroupLayout.PREFERRED_SIZE)
-																		.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-																				GroupLayout.PREFERRED_SIZE)          
+				.addComponent(resLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				);
 		userOptions.setLayout(userOptionsLayout);
 
@@ -428,15 +432,25 @@ public class ClientGUIManager {
 	 * @return 
 	 */
 
-	protected static void addTextToMonitor(String text){
-
-		ClientData.monitor.setText(text); //(ClientData.monitor.getText()+"\n"+
-
+	protected static void addTextToMonitor(String text)
+	{
+		if(System.currentTimeMillis() - ClientData.t >= 1000)
+		{
+			ClientData.jitter.setText("Jitter: " + text);
+			ClientData.t = System.currentTimeMillis();
+		}
 	}
 
 	protected static void addTextToFramerateMonitor(String text)
 	{
-		ClientData.framerateMonitor.setText(text);
+		if(System.currentTimeMillis() - ClientData.t >= 1000)
+			ClientData.framerate.setText("Framerate: " + text);
+	}
+	
+	protected static void addTextToBandwidthMonitor(String text)
+	{
+		if(System.currentTimeMillis() - ClientData.t >= 1000)
+			ClientData.bandwidth.setText("Bandwidth: " + text);
 	}
 
 	protected static JPanel createEncodingOptionsPanel()
@@ -444,17 +458,28 @@ public class ClientGUIManager {
 		//create user options panel
 		JPanel userOptions = createUserOptionsPanel();	
 
+		ClientData.bandwidth = new JLabel();
+		ClientData.bandwidth.setText("Bandwidth: ");
+		
+		ClientData.framerate = new JLabel();
+		ClientData.framerate.setText("Framerate: ");
+		
+		ClientData.jitter = new JLabel(); 
+		ClientData.jitter.setText("Jitter: ");
+		
+		/*
 		//Monitor data
 		ClientData.monitor = new JTextArea();
 		JScrollPane scrollPane = new JScrollPane(ClientData.monitor);
 		scrollPane.setPreferredSize(new Dimension(300, 50));
 		ClientData.monitor.setEditable(false);
 
+		//Framerate data
 		ClientData.framerateMonitor = new JTextArea();
 		JScrollPane bandScroll = new JScrollPane(ClientData.framerateMonitor);
 		bandScroll.setPreferredSize(new Dimension(300,50));
 		ClientData.framerateMonitor.setEditable(false);
-
+		*/
 		JPanel encOptions = new JPanel();
 		encOptions.setPreferredSize(new Dimension(320,150));
 		encOptions.add(userOptions);
@@ -467,31 +492,46 @@ public class ClientGUIManager {
 		encLayout.setHorizontalGroup(
 				encLayout.createParallelGroup()
 				.addGroup(encLayout.createSequentialGroup()						
-						.addComponent(scrollPane,  GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-						)
-						.addGroup(encLayout.createSequentialGroup()
-								.addComponent(bandScroll, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								)
-								.addGroup(encLayout.createSequentialGroup()						
-										.addComponent(userOptions, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										)
-
+					.addComponent(ClientData.bandwidth,  GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+				.addGroup(encLayout.createSequentialGroup()
+					.addComponent(ClientData.framerate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+				.addGroup(encLayout.createSequentialGroup()
+					.addComponent(ClientData.jitter, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))	
+				.addGroup(encLayout.createSequentialGroup()						
+					.addComponent(userOptions, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 				);
 		encLayout.setVerticalGroup(
 				encLayout.createSequentialGroup()		
 				.addGroup(encLayout.createParallelGroup()						
-						.addComponent(scrollPane)
-						)
-						.addGroup(encLayout.createParallelGroup()
-								.addComponent(bandScroll)
-								)
-								.addGroup(encLayout.createParallelGroup()						
-										.addComponent(userOptions)
-										)
+					.addComponent(ClientData.bandwidth))
+				.addGroup(encLayout.createParallelGroup()
+					.addComponent(ClientData.framerate))
+				.addGroup(encLayout.createParallelGroup()						
+					.addComponent(ClientData.jitter))
+				.addGroup(encLayout.createParallelGroup()						
+					.addComponent(userOptions))
 				);
+		
+		/*
+		encLayout.setHorizontalGroup(
+				encLayout.createParallelGroup()
+				.addGroup(encLayout.createSequentialGroup()						
+					.addComponent(scrollPane,  GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+				.addGroup(encLayout.createSequentialGroup()
+					.addComponent(bandScroll, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+				.addGroup(encLayout.createSequentialGroup()						
+					.addComponent(userOptions, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+				);
+		encLayout.setVerticalGroup(
+				encLayout.createSequentialGroup()		
+				.addGroup(encLayout.createParallelGroup()						
+					.addComponent(scrollPane))
+				.addGroup(encLayout.createParallelGroup()
+					.addComponent(bandScroll))
+				.addGroup(encLayout.createParallelGroup()						
+					.addComponent(userOptions))
+				);
+		*/
 		encOptions.setLayout(encLayout);
 		return encOptions;
 	}

@@ -16,20 +16,18 @@ public class vClientManager {
 		ClientData.activeWindow = 0;
 		ClientData.data[0] = new GstData();
 		ClientData.data[1] = new GstData();
-		//Set the client state
 		ClientData.data[0].state = ClientData.State.REQUESTING;
 		ClientData.data[1].state = ClientData.State.REQUESTING;
 		ClientData.data[0].mode = ClientData.Mode.PASSIVE;
 		ClientData.data[1].mode = ClientData.Mode.PASSIVE;
 		
-		// create the client resource singleton
 		ClientResource res = ClientResource.getInstance();
 		res.initWithFile("client-resources.txt");
-		//System.out.println("client has " + res.getBandwidth() + " resources");
 		
 		args = Gst.init("Client Pipeline", args);
 		
-		
+		ClientData.t = System.currentTimeMillis();
+		ClientData.muted = false;		
 		ClientData.FrameRes.setRes("320x240");
 		ClientData.frameRate = 10;
 		ClientData.seek = false;
@@ -37,11 +35,9 @@ public class vClientManager {
 		try {
 			ClientData.ipAddress = Inet4Address.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		//initialize static window reference
 		ClientData.vidComp1 = new VideoComponent();
 		ClientData.data[0].windowSink = ClientData.vidComp1.getElement();
 		ClientData.vidComp2 = new VideoComponent();

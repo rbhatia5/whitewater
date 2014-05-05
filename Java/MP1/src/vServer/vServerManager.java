@@ -42,7 +42,7 @@ public class vServerManager implements Runnable {
 		
 		synchronized(data.mainThread)
 		{
-			notify();
+			data.mainThread.notify();
 		}
 		
 		while(!quit);

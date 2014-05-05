@@ -252,7 +252,8 @@ public class TCPServer implements Runnable{
 				SM.data.pipe.setState(State.PLAYING);
 				try {
 					SM.data.pipeMsgThread.wait();
-					System.err.println("PLAY");
+					if(SM.data.pipe.getState().equals(State.PLAYING))
+						System.err.println("PLAY");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -274,12 +275,12 @@ public class TCPServer implements Runnable{
 				SM.data.pipe.setState(State.PAUSED);
 				try {
 					SM.data.pipeMsgThread.wait();
-					System.err.println("PAUSE");
+					if(SM.data.pipe.getState().equals(State.PAUSED))
+						System.err.println("PAUSE");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
-			//SM.data.fakeSink.setState(State.PAUSED);
 		}
 		else if(action.equals(Message.STOP_ACTION))
 		{
@@ -289,7 +290,8 @@ public class TCPServer implements Runnable{
 				SM.data.pipe.setState(State.NULL);
 				try {
 					SM.data.pipeMsgThread.wait();
-					System.err.println("STOP");
+					if(SM.data.pipe.getState().equals(State.NULL))
+						System.err.println("STOP");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -325,6 +327,7 @@ public class TCPServer implements Runnable{
 			System.out.println("Server position is " + SM.data.position);
 		} catch (JSONException e) {
 			SM.data.position = SM.data.pipe.queryPosition(TimeUnit.SECONDS);
+			System.out.println("Server position is " + SM.data.position);
 		}
 	}
 	
