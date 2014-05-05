@@ -23,6 +23,10 @@ public class ClientData {
 		REQUESTING, NEGOTIATING, STREAMING
 	}
 	
+	public enum MediaType {
+		MOVIE, WEBCHAT
+	}
+	
 	protected static final int BYTES_PER_PIXEL = 3;
 	
 	protected static GstData[] data = new GstData[2];
@@ -50,6 +54,7 @@ public class ClientData {
 	protected static long timeStamp;
 	protected static long encDecTime;
 	protected static String ipAddress;
+	protected static MediaType mediaType = MediaType.MOVIE;
 
 	protected static JTextArea framerateMonitor;
 	protected static JLabel bandwidth;

@@ -15,12 +15,12 @@ import org.gstreamer.elements.good.RTPBin;
 public class ServerPipelineManager {
 
 	protected vServerManager SM;
-	
+
 	ServerPipelineManager(vServerManager sm)
 	{
 		SM = sm;
 	}
-	
+
 	/**
 	 * Author:
 	 * Purpose:
@@ -103,7 +103,15 @@ public class ServerPipelineManager {
 		 */
 
 		//Initialize elements
-		Element source 			= ElementFactory.make("filesrc", "file-source");
+		Element source;
+		System.out.println("Building a pipeline for : " + SM.data.mediaType);
+		
+		if(SM.data.mediaType == ServerData.MediaType.WEBCHAT)
+			source 	= ElementFactory.make("v4l2src", "videoCamera");
+		else
+			source = ElementFactory.make("filesrc", "file-source");
+
+		Element microphone		= ElementFactory.make("alsasrc", "microphone");
 		Element avidemux 		= ElementFactory.make("avidemux", "avi-demux");
 		Element queue1 			= ElementFactory.make("queue", "avimux-queue");
 		Element videoDecodeBin2 = ElementFactory.make("decodebin2", "video-decodebin2");
@@ -122,10 +130,11 @@ public class ServerPipelineManager {
 		Element udpRTCPASrc 	= ElementFactory.make("udpsrc", "udp-rtcp-audio-src");
 		Element udpRTCPASink 	= ElementFactory.make("udpsink", "udp-rtcp-audio-sink");
 		Element fakesink 		= ElementFactory.make("fakesink", "fake");
+		Element videoCapsFilter = ElementFactory.make("capsfilter", "videocaps");
 		SM.data.fakeSink 		= fakesink;
-		
+
 		//Error check
-		if(source == null || avidemux == null || queue1 == null || videoDecodeBin2 == null || autoconvert == null || encoder == null || videopay == null || SM.data.rtpBin == null || 
+		if(source == null || microphone == null || avidemux == null || queue1 == null || videoDecodeBin2 == null || autoconvert == null || encoder == null || videopay == null || SM.data.rtpBin == null || 
 				audioDecodeBin2 == null || audioconvert == null || speexenc == null || audiopay == null || 
 				udpRTPVSink == null || udpRTCPVSrc == null || udpRTCPVSink == null || udpRTPASink == null || udpRTCPASrc == null || udpRTCPASink == null)
 		{
@@ -135,11 +144,27 @@ public class ServerPipelineManager {
 
 		if(SM.data.activity.equals("Active")){
 
-			SM.data.pipe.addMany(source, avidemux, queue1, videoDecodeBin2, autoconvert, encoder, videopay, audioDecodeBin2, audioconvert, speexenc, audiopay, SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink, udpRTPASink, udpRTCPASrc, udpRTCPASink);
+			SM.data.pipe.addMany(source, queue1, videoDecodeBin2, autoconvert, encoder, videopay, audioDecodeBin2, audioconvert, speexenc, audiopay, SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink, udpRTPASink, udpRTCPASrc, udpRTCPASink);
+			if(SM.data.mediaType == ServerData.MediaType.MOVIE) {
 
-			if(!Element.linkMany(source, avidemux))
-				System.err.println("Could not link file source to mux");
-			//if(!Element.linkMany(queue1, videoDecodeBin2, autoconvert, encoder, videopay))
+				SM.data.pipe.addMany(avidemux);
+				if(!Element.linkMany(source, avidemux))
+					System.err.println("Could not link file source to mux");
+				//if(!Element.linkMany(queue1, videoDecodeBin2, autoconvert, encoder, videopay))
+			}
+			
+			if(SM.data.mediaType == ServerData.MediaType.MOVIE){
+				source.set("location", "sample.avi");
+
+			}else{
+				String videoCapsString = String.format("video/x-raw-yuv,width=320,height=240,framerate=15/1");
+				Caps videoCaps = Caps.fromString(videoCapsString);
+				videoCapsFilter.setCaps(videoCaps);
+				
+				if(!Element.linkMany(source,videoCapsFilter,queue1))
+					System.err.println("Could not link webcam");
+			}
+			
 
 			if(!Element.linkMany(queue1, videoDecodeBin2))
 				System.err.println("Could not link queue -> decodebin");
@@ -165,6 +190,9 @@ public class ServerPipelineManager {
 				}
 
 			});
+
+			if(SM.data.mediaType == ServerData.MediaType.WEBCHAT)
+				if(!Element.linkMany(microphone,audioDecodeBin2));
 
 			audioDecodeBin2.connect(new Element.PAD_ADDED() {
 				public void padAdded(Element source, Pad newPad) {
@@ -209,8 +237,7 @@ public class ServerPipelineManager {
 			//Element.linkMany(encoder, pay);
 			//Element.linkMany(source, encoder, pay);
 
-			source.set("location", "sample.avi");
-
+			
 			udpRTPVSink.set("host", SM.data.clientIP);
 			udpRTPVSink.set("port", SM.data.videoRTP);
 			udpRTCPVSrc.set("port", SM.data.videoRTCPin);
@@ -224,21 +251,23 @@ public class ServerPipelineManager {
 			udpRTCPASink.set("port", SM.data.audioRTCPout);
 
 			//Link sometimes pads manually
-			avidemux.connect(new Element.PAD_ADDED() {
-				public void padAdded(Element source, Pad newPad) {
-					if(newPad.getName().contains("video"))
-					{
-						Pad queueSinkPad = SM.data.pipe.getElementByName("avimux-queue").getStaticPad("sink");
-						newPad.link(queueSinkPad);
+			if(SM.data.mediaType == ServerData.MediaType.MOVIE)
+			{
+				avidemux.connect(new Element.PAD_ADDED() {
+					public void padAdded(Element source, Pad newPad) {
+						if(newPad.getName().contains("video"))
+						{
+							Pad queueSinkPad = SM.data.pipe.getElementByName("avimux-queue").getStaticPad("sink");
+							newPad.link(queueSinkPad);
+						}
+						else if(newPad.getName().contains("audio"))
+						{
+							Pad decodebinSinkPad = SM.data.pipe.getElementByName("audio-decodebin2").getStaticPad("sink");
+							newPad.link(decodebinSinkPad);
+						}
 					}
-					else if(newPad.getName().contains("audio"))
-					{
-						Pad decodebinSinkPad = SM.data.pipe.getElementByName("audio-decodebin2").getStaticPad("sink");
-						newPad.link(decodebinSinkPad);
-					}
-				}
-			});
-
+				});
+			}
 			SM.data.rtpBin.connect(new Element.PAD_ADDED() {
 				public void padAdded(Element source, Pad newPad) {
 					if(newPad.getName().contains("send_rtp_src_0"))
@@ -289,11 +318,22 @@ public class ServerPipelineManager {
 
 		}else if(SM.data.activity.equals("Passive")){
 
-			SM.data.pipe.addMany(source, avidemux, queue1, videoDecodeBin2, autoconvert, encoder, videopay,SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink, fakesink);
+			SM.data.pipe.addMany(source, queue1, videoDecodeBin2, autoconvert, encoder, videopay,SM.data.rtpBin, udpRTPVSink, udpRTCPVSrc, udpRTCPVSink);
 
-			if(!Element.linkMany(source, avidemux))
-				System.err.println("Could not link file source to mux");
-			//if(!Element.linkMany(queue1, videoDecodeBin2, autoconvert, encoder, videopay))
+			if(SM.data.mediaType == ServerData.MediaType.MOVIE) {
+
+				SM.data.pipe.addMany(avidemux,fakesink);
+				if(!Element.linkMany(source, avidemux))
+					System.err.println("Could not link file source to mux");
+				//if(!Element.linkMany(queue1, videoDecodeBin2, autoconvert, encoder, videopay))
+			}
+			else
+			{
+				if(!Element.linkMany(source,queue1))
+					System.err.println("Could not link webcam");
+
+
+			}
 
 			if(!Element.linkMany(queue1, videoDecodeBin2))
 				System.err.println("Could not link queue -> decodebin");
@@ -334,8 +374,8 @@ public class ServerPipelineManager {
 			//	System.err.println("Could not connect videorate -> videoscale");
 			//Element.linkMany(encoder, pay);
 			//Element.linkMany(source, encoder, pay);
-
-			source.set("location", "sample.avi");
+			if(SM.data.mediaType == ServerData.MediaType.MOVIE)
+				source.set("location", "sample.avi");
 
 			udpRTPVSink.set("host", SM.data.clientIP);
 			udpRTPVSink.set("port", SM.data.videoRTP);
@@ -343,23 +383,25 @@ public class ServerPipelineManager {
 			udpRTCPVSink.set("host", SM.data.clientIP);
 			udpRTCPVSink.set("port", SM.data.videoRTCPout);
 
+			if(SM.data.mediaType == ServerData.MediaType.MOVIE)
+			{
+				//Link sometimes pads manually
+				avidemux.connect(new Element.PAD_ADDED() {
+					public void padAdded(Element source, Pad newPad) {
+						if(newPad.getName().contains("video"))
+						{
+							Pad queueSinkPad = SM.data.pipe.getElementByName("avimux-queue").getStaticPad("sink");
+							newPad.link(queueSinkPad);
+						}else if(newPad.getName().contains("audio")){
+							Pad fakeSinkPad = SM.data.pipe.getElementByName("fake").getStaticPad("sink");
+							newPad.link(fakeSinkPad);
 
-			//Link sometimes pads manually
-			avidemux.connect(new Element.PAD_ADDED() {
-				public void padAdded(Element source, Pad newPad) {
-					if(newPad.getName().contains("video"))
-					{
-						Pad queueSinkPad = SM.data.pipe.getElementByName("avimux-queue").getStaticPad("sink");
-						newPad.link(queueSinkPad);
-					}else if(newPad.getName().contains("audio")){
-						Pad fakeSinkPad = SM.data.pipe.getElementByName("fake").getStaticPad("sink");
-						newPad.link(fakeSinkPad);
-						
-						System.out.println("connected audio... Not!!!");
+							System.out.println("connected audio... Not!!!");
+						}
 					}
-				}
-			});
-
+				});
+			}
+			
 			SM.data.rtpBin.connect(new Element.PAD_ADDED() {
 				public void padAdded(Element source, Pad newPad) {
 					if(newPad.getName().contains("send_rtp_src_0"))
@@ -409,7 +451,7 @@ public class ServerPipelineManager {
 				});
 			}
 		});
-		
+
 		/*
 		SM.data.pipe.getBus().connect(new Bus.ASYNC_DONE() {
 			public void asyncDone(GstObject source) {
@@ -419,8 +461,8 @@ public class ServerPipelineManager {
 				}
 			}
 		});
-		*/
-		
+		 */
+
 		//connect to signal EOS
 		SM.data.pipe.getBus().connect(new Bus.EOS() {
 			public void endOfStream(GstObject source) {

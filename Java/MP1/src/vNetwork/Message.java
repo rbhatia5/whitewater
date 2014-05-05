@@ -31,10 +31,16 @@ public class Message {
 	public static final String ACTIVITY_PASSIVE_VALUE = "passive";
 	public final static String PORT_REQUEST_KEY = "port";
 	public final static String POSITION_KEY = "position";
+	public static final String SOURCE_KEY = "src";
+	public static final String MOVIE_SOURCE_VALUE = "movie";
+	public static final String WEBCAM_SOURCE_VALUE = "webcam";
+	
 	
 	public enum MessageType {
 		NEW, REQUEST, CONTROL, RESPONSE, NULL
 	}
+
+	
 	
 	private String sender; 
 	// SV## or CL##

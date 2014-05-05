@@ -71,6 +71,8 @@ public class TCPServer implements Runnable{
 			{
 				System.out.println("SERVER: Connecting to socket port localhost:" + comPort);
 				connectionSocket = socket.accept();
+				
+				
 				System.out.printf("SERVER: Connected to %s\n", connectionSocket.toString());
 				inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
 				outToClient = new DataOutputStream(connectionSocket.getOutputStream());
@@ -151,12 +153,19 @@ public class TCPServer implements Runnable{
 				else if(SM.data.state.equals(ServerData.State.STREAMING))
 				{
 					try {
-						SM.data.clientMessage.getData(Message.ACTION_KEY);
-						adaptPipeline();
-						Message response = new Message (MessageType.RESPONSE);
-						response.setSender("SV00");
-						response.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
-						outToClient.writeBytes(response.stringify() + '\n');
+						
+						Message msg = SM.data.clientMessage;
+						
+							SM.data.clientMessage.getData(Message.ACTION_KEY);
+							adaptPipeline();
+							Message response = new Message (MessageType.RESPONSE);
+							response.setSender("SV00");
+							response.addData(Message.RESULT_KEY, Message.RESULT_ACCEPT_VALUE);
+							outToClient.writeBytes(response.stringify() + '\n');
+					
+					
+						
+						
 					} catch (JSONException e) {
 						changeActivity();
 						Message response = new Message(MessageType.RESPONSE);
@@ -212,7 +221,11 @@ public class TCPServer implements Runnable{
 	public boolean negotiate() throws JSONException
 	{
 		int framerate, width, height;
-		String ip;
+		String ip, source;
+		
+		source = (String)SM.data.clientMessage.getData(Message.SOURCE_KEY);
+		if(source == null)
+			source = Message.MOVIE_SOURCE_VALUE;
 		
 		framerate = (Integer)SM.data.clientMessage.getData(Message.FRAMERATE_KEY);
 		width = (Integer)SM.data.clientMessage.getData(Message.FRAME_WIDTH_KEY);
@@ -224,6 +237,14 @@ public class TCPServer implements Runnable{
 		SM.data.framerate = framerate;
 		SM.data.width = width;
 		SM.data.height = height;
+		
+		if(source.equals( Message.MOVIE_SOURCE_VALUE))
+			SM.data.mediaType = ServerData.MediaType.MOVIE;
+		else if( source.equals(Message.WEBCAM_SOURCE_VALUE))
+			SM.data.mediaType = ServerData.MediaType.WEBCHAT;
+		
+		
+		
 		if(activity.equalsIgnoreCase(Message.ACTIVITY_ACTIVE_VALUE))
 			SM.data.activity = "Active";
 		else

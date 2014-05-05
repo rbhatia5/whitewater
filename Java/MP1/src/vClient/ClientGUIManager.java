@@ -48,6 +48,11 @@ public class ClientGUIManager {
 						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
 						streamRequest.addData(Message.CLIENT_IP_ADDRESS_KEY, ClientData.ipAddress);
 						streamRequest.addData(Message.ACTIVITY_KEY, ClientData.data[ClientData.activeWindow].mode);
+						if(ClientData.mediaType == ClientData.MediaType.MOVIE)
+							streamRequest.addData(Message.SOURCE_KEY, Message.MOVIE_SOURCE_VALUE);
+						else 
+							streamRequest.addData(Message.SOURCE_KEY, Message.WEBCAM_SOURCE_VALUE);
+						
 					}catch(JSONException j)
 					{
 						System.err.println("Could not build a stream request");
@@ -240,6 +245,7 @@ public class ClientGUIManager {
 		String[] resList = {"320x240", "640x480"};
 		String[] frList = {"10"};
 		String[] actpass = {"Active", "Passive"};
+		String[] vchat = {"Movie", "Webchat"};
 
 		JTextField serverIPField = new JTextField("Enter server IP address");
 		serverIPField.addActionListener(new ActionListener(){
@@ -251,12 +257,66 @@ public class ClientGUIManager {
 
 		ClientData.optionsComponents.add(serverIPField);
 
+		
+		JComboBox videoChat = new JComboBox(vchat);
+		videoChat.setPreferredSize(new Dimension(150,30));
+		
+		videoChat.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e)
+			{
+				JComboBox src = (JComboBox) e.getSource();
+				int sel = src.getSelectedIndex();
+				
+				if(ClientData.mediaType == ClientData.MediaType.MOVIE && sel == 0)
+					return;
+				if(ClientData.mediaType == ClientData.MediaType.WEBCHAT && sel == 1)
+					return;
+				
+				switch(sel)
+				{
+				case 0: 
+					ClientData.mediaType = ClientData.MediaType.MOVIE;
+					break;
+				case 1: 
+					ClientData.mediaType = ClientData.MediaType.WEBCHAT;
+					break; 
+				default: 
+					break;
+				}
+				
+				
+				if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.STREAMING))
+				{
+					
+					
+					JButton stopButton = ClientData.controlButtons.get(3);
+					JButton connectButton = ClientData.controlButtons.get(0);
+					JButton playButton = ClientData.controlButtons.get(1);
+					
+					stopButton.doClick();
+					//connectButton.doClick();
+					//playButton.doClick();
+				}
+				else
+				{
+					
+				}
+				
+			}
+		});
+		
+		
+		
 		JLabel activity = new JLabel("Mode");
 		activity.setPreferredSize(new Dimension(150, 30));
 
+		
+		
 		JComboBox activeOrPassive = new JComboBox(actpass);
+		
 		activeOrPassive.setPreferredSize(new Dimension(150, 30));
 		activeOrPassive.setSelectedIndex(1);
+		
 		activeOrPassive.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e){
 				JComboBox source = (JComboBox)e.getSource();
@@ -311,11 +371,12 @@ public class ClientGUIManager {
 					}
 					TCPClient.sendServerMessage(activityMsg);
 					
+					
 					playButton.doClick();
 				}
 			}
 		});
-
+		
 		ClientData.optionsComponents.add(activeOrPassive);
 
 		JLabel resLabel = new JLabel("Resolution");
@@ -402,6 +463,7 @@ public class ClientGUIManager {
 				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(videoChat, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
@@ -413,6 +475,7 @@ public class ClientGUIManager {
 				.addComponent(resCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(frLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(frCB, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(videoChat, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)

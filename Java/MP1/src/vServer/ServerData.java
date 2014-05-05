@@ -31,6 +31,10 @@ public class ServerData {
 		NEGOTIATING, STREAMING
 	}
 	
+	public enum MediaType {
+		MOVIE, WEBCHAT
+	}
+	
 	protected String clientIP = "127.0.0.1";
 	protected int comPort;
 	protected int videoRTP;
@@ -59,7 +63,18 @@ public class ServerData {
 	protected Thread serverThread;
 	protected Thread pipeMsgThread;
 	protected boolean notify;
+	public MediaType mediaType = MediaType.MOVIE;
 	
+	protected ServerPipelineManager SPM; 
+	
+	public ServerPipelineManager getSPM() {
+		return SPM;
+	}
+
+	public void setSPM(ServerPipelineManager sPM) {
+		SPM = sPM;
+	}
+
 	public String getIpAddress() {
 		return ipAddress;
 	}
