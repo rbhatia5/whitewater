@@ -26,15 +26,19 @@ public class ClientGUIManager {
 	protected static JPanel createControlPanel()
 	{
 		JButton negotiateButton = new JButton("Connect");
+		ClientData.connect = negotiateButton;
 		negotiateButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				if(ClientData.mediaType == ClientData.MediaType.WEBCHAT)
 				{
+					if(ClientData.mediaType != ClientData.MediaType.WEBCHAT && ClientData.bounce == 0)
+					{
+						ClientData.bounce++;
+						Message conn = new Message();
+						conn.setType(Message.MessageType.CHATCONNECT);
+						TCPClient.sendChatMessage(conn);
+					}
 					
-				}
-				else
-				{
 					if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
 					{
 						System.out.println("CLIENT: Requesting Server");
@@ -293,7 +297,7 @@ public class ClientGUIManager {
 		
 		JComboBox videoChat = new JComboBox(vchat);
 		videoChat.setPreferredSize(new Dimension(150,30));
-		
+		ClientData.videoChat = videoChat;
 		videoChat.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
@@ -664,5 +668,32 @@ public class ClientGUIManager {
 		window1Button.doClick();
 
 		return windowPicker;
+	}
+	public static void handleMessage(Message msg) {
+		try {
+			System.err.println(msg.stringify());
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		//if(msg.getType() == Message.MessageType.CHATCONNECT)
+		{
+			int accept = JOptionPane.showConfirmDialog(ClientData.frame, "Accept webchat request?");
+			if(accept == 0)
+			{
+				ClientData.friends.add("192.17.11.62");
+				ClientData.friendsList.addItem("Kristian");
+				ClientData.friendsList.setSelectedItem("Kristian");
+				ClientData.videoChat.setSelectedIndex(1);
+				ClientData.connect.doClick();
+				
+			}
+		}
+		/*
+		else if(msg.getType().equals(Message.MessageType.CHATMESSAGE))
+		{
+			//print to chatbox
+			int accept = JOptionPane.showConfirmDialog(ClientData.frame, "Accept webcha1t request?");
+		}
+		*/
 	}
 }

@@ -14,6 +14,10 @@ public class vClientManager {
 	
 	public static void main(String[] args)
 	{
+		ChatMessenger msgr = new ChatMessenger();
+		Thread CMS = new Thread(msgr);
+		CMS.start();
+		
 		RequestServer RS = new RequestServer();
 		Thread RSThread = new Thread(RS);
 		RSThread.start();
@@ -26,11 +30,13 @@ public class vClientManager {
 		ClientData.data[0].mode = ClientData.Mode.PASSIVE;
 		ClientData.data[1].mode = ClientData.Mode.PASSIVE;
 		
+		
 		ClientResource res = ClientResource.getInstance();
 		res.initWithFile("client-resources.txt");
 		
 		args = Gst.init("Client Pipeline", args);
 		
+		ClientData.bounce = 0;
 		ClientData.t = System.currentTimeMillis();
 		ClientData.muted = false;		
 		ClientData.FrameRes.setRes("320x240");

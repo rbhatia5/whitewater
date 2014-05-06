@@ -67,6 +67,12 @@ public class ClientData {
 	
 	protected static ArrayList<String> friends = new ArrayList<String>();
 	protected static JComboBox friendsList;
+
+	public static JComboBox videoChat;
+
+	public static JButton connect;
+
+	public static int bounce;
 	
 	public static String getIpAddress() {
 		return ipAddress;

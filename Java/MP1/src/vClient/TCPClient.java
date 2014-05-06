@@ -12,7 +12,7 @@ public class TCPClient implements Runnable{
 	protected String message;
 	protected Message msg;
 	protected static boolean control;
-	
+	protected boolean chat;
 	/**
 	 * Author:
 	 * Purpose:
@@ -22,6 +22,23 @@ public class TCPClient implements Runnable{
 	public static void sendServerMessage(Message msg)
 	{
 		TCPClient client = new TCPClient(msg);
+		client.chat = false;
+		Thread clientThread = new Thread(client);
+		clientThread.start();
+		try {
+			synchronized(clientThread)
+			{
+				clientThread.wait();
+			}
+		} catch (InterruptedException e3) {
+			e3.printStackTrace();
+		}
+	}
+	
+	public static void sendServerMessage(Message msg, boolean b)
+	{
+		TCPClient client = new TCPClient(msg);
+		client.chat = b;
 		Thread clientThread = new Thread(client);
 		clientThread.start();
 		try {
@@ -54,7 +71,10 @@ public class TCPClient implements Runnable{
 			{
 				try
 				{
-					socket = new Socket(ClientData.data[ClientData.activeWindow].serverAddress, ClientData.data[ClientData.activeWindow].comPort);
+					if(chat)
+						socket = new Socket(ClientData.data[ClientData.activeWindow].serverAddress, 4999);
+					else
+						socket = new Socket(ClientData.data[ClientData.activeWindow].serverAddress, ClientData.data[ClientData.activeWindow].comPort);
 				} catch (ConnectException ignore){};
 				if(socket != null)
 					break;
@@ -74,15 +94,18 @@ public class TCPClient implements Runnable{
 			
 			System.out.printf("Server sent: %s\n", serverString);
 			socket.close();
-			if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.REQUESTING))
+			if(!chat)
 			{
-				System.out.println("CLIENT: Beginning negotiation");
-				ClientData.data[ClientData.activeWindow].state = ClientData.State.NEGOTIATING;
-			}
-			else if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.NEGOTIATING))
-			{
-				System.out.println("CLIENT: Beginning streaming");
-				ClientData.data[ClientData.activeWindow].state = ClientData.State.STREAMING;
+				if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.REQUESTING))
+				{
+					System.out.println("CLIENT: Beginning negotiation");
+					ClientData.data[ClientData.activeWindow].state = ClientData.State.NEGOTIATING;
+				}
+				else if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.NEGOTIATING))
+				{
+					System.out.println("CLIENT: Beginning streaming");
+					ClientData.data[ClientData.activeWindow].state = ClientData.State.STREAMING;
+				}
 			}
 			synchronized(this)
 			{
@@ -148,5 +171,11 @@ public class TCPClient implements Runnable{
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void sendChatMessage(Message conn) {
+		// TODO Auto-generated method stub
+		
+		sendServerMessage(conn, true);
 	}
 }

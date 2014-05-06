@@ -34,10 +34,13 @@ public class Message {
 	public static final String SOURCE_KEY = "src";
 	public static final String MOVIE_SOURCE_VALUE = "movie";
 	public static final String WEBCAM_SOURCE_VALUE = "webcam";
-	
+	public final static String COMM_KEY = "conn";
+	public final static String COMM_CHAT_VALUE = "chat";
+	public final static String COMM_CONNECT_VALUE = "conn";
+	public final static String CHAT_KEY = "chatmsg";
 	
 	public enum MessageType {
-		NEW, REQUEST, CONTROL, RESPONSE, NULL
+		NEW, REQUEST, CONTROL, RESPONSE, COMM, NULL, CHATCONNECT, CHATMESSAGE
 	}
 
 	
