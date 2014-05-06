@@ -72,7 +72,6 @@ public class TCPServer implements Runnable{
 				System.out.println("SERVER: Connecting to socket port localhost:" + comPort);
 				connectionSocket = socket.accept();
 				
-				
 				System.out.printf("SERVER: Connected to %s\n", connectionSocket.toString());
 				inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
 				outToClient = new DataOutputStream(connectionSocket.getOutputStream());

@@ -4,10 +4,10 @@ import org.gstreamer.*;
 
 public class vServerManager implements Runnable {
 	
-	protected ServerData data;
+	public ServerData data;
 	protected boolean quit;
 	
-	vServerManager(int serverNumber)
+	public vServerManager(int serverNumber)
 	{
 		data = new ServerData(serverNumber);
 	}

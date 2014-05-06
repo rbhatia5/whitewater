@@ -29,46 +29,51 @@ public class ClientGUIManager {
 		negotiateButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) {
-				if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
+				if(ClientData.mediaType == ClientData.MediaType.WEBCHAT)
 				{
-					System.out.println("CLIENT: Requesting Server");
-					ClientData.data[ClientData.activeWindow].comPort = 5000;
-					Message portRequest = new Message();
-					portRequest.setSender("CL??"); 
-					portRequest.setType(MessageType.NEW);
-					TCPClient.requestPort(portRequest);
-
-					System.out.println("CLIENT: Negotiating with Server");
-					Message streamRequest = new Message();
-					try {
-						streamRequest.setSender("CL??"); 
-						streamRequest.setType(MessageType.REQUEST); 
-						streamRequest.addData(Message.FRAMERATE_KEY, ClientData.frameRate);
-						streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
-						streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
-						streamRequest.addData(Message.CLIENT_IP_ADDRESS_KEY, ClientData.ipAddress);
-						streamRequest.addData(Message.ACTIVITY_KEY, ClientData.data[ClientData.activeWindow].mode);
-						if(ClientData.mediaType == ClientData.MediaType.MOVIE)
-							streamRequest.addData(Message.SOURCE_KEY, Message.MOVIE_SOURCE_VALUE);
-						else 
-							streamRequest.addData(Message.SOURCE_KEY, Message.WEBCAM_SOURCE_VALUE);
-						
-					}catch(JSONException j)
+					
+				}
+				else
+				{
+					if(ClientResource.getInstance().checkForResource(ClientData.getProposedBandwidth()))
 					{
-						System.err.println("Could not build a stream request");
-						return;
+						System.out.println("CLIENT: Requesting Server");
+						ClientData.data[ClientData.activeWindow].comPort = 5000;
+						Message portRequest = new Message();
+						portRequest.setSender("CL??"); 
+						portRequest.setType(MessageType.NEW);
+						TCPClient.requestPort(portRequest);
+	
+						System.out.println("CLIENT: Negotiating with Server");
+						Message streamRequest = new Message();
+						try {
+							streamRequest.setSender("CL??"); 
+							streamRequest.setType(MessageType.REQUEST); 
+							streamRequest.addData(Message.FRAMERATE_KEY, ClientData.frameRate);
+							streamRequest.addData(Message.FRAME_WIDTH_KEY, ClientData.FrameRes.getWidth());
+							streamRequest.addData(Message.FRAME_HEIGHT_KEY, ClientData.FrameRes.getHeight());
+							streamRequest.addData(Message.CLIENT_IP_ADDRESS_KEY, ClientData.ipAddress);
+							streamRequest.addData(Message.ACTIVITY_KEY, ClientData.data[ClientData.activeWindow].mode);
+							if(ClientData.mediaType == ClientData.MediaType.MOVIE)
+								streamRequest.addData(Message.SOURCE_KEY, Message.MOVIE_SOURCE_VALUE);
+							else 
+								streamRequest.addData(Message.SOURCE_KEY, Message.WEBCAM_SOURCE_VALUE);
+							
+						}catch(JSONException j)
+						{
+							System.err.println("Could not build a stream request");
+							return;
+						}
+						boolean result = TCPClient.negotiateProperties(streamRequest);
+	
+						if(result)
+							ClientPipelineManager.modify_pipeline();
 					}
-					boolean result = TCPClient.negotiateProperties(streamRequest);
-
-					if(result)
-						ClientPipelineManager.modify_pipeline();
-				}
-				else {
-					System.err.println("Client Resource Admission Failed");
-				}
-
-
-			}					
+					else {
+						System.err.println("Client Resource Admission Failed");
+					}	
+				}	
+			}
 		});
 
 		JButton playButton = new JButton("Play");

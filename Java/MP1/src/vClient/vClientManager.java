@@ -8,11 +8,16 @@ import javax.swing.*;
 
 import org.gstreamer.*;
 import org.gstreamer.swing.*;
+import vServer.*;
 
 public class vClientManager {
 	
 	public static void main(String[] args)
 	{
+		RequestServer RS = new RequestServer();
+		Thread RSThread = new Thread(RS);
+		RSThread.start();
+		
 		ClientData.activeWindow = 0;
 		ClientData.data[0] = new GstData();
 		ClientData.data[1] = new GstData();

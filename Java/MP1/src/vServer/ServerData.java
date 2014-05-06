@@ -35,7 +35,7 @@ public class ServerData {
 		MOVIE, WEBCHAT
 	}
 	
-	protected String clientIP = "127.0.0.1";
+	public String clientIP = "127.0.0.1";
 	protected int comPort;
 	protected int videoRTP;
 	protected int videoRTCPout;
