@@ -247,16 +247,44 @@ public class ClientGUIManager {
 		String[] actpass = {"Active", "Passive"};
 		String[] vchat = {"Movie", "Webchat"};
 
-		JTextField serverIPField = new JTextField("Enter server IP address");
-		serverIPField.addActionListener(new ActionListener(){
+		JButton addFriend = new JButton("Add Friend");
+		addFriend.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
-				JTextField source = (JTextField) e.getSource();
-				ClientData.data[ClientData.activeWindow].serverAddress = source.getText();
+				String name = (String)JOptionPane.showInputDialog(
+						ClientData.frame,
+						"Enter friend's name",
+						"Add Friend",
+						JOptionPane.PLAIN_MESSAGE,
+						null,
+						null,
+						"Name"
+						);
+				String IP = (String)JOptionPane.showInputDialog(
+						ClientData.frame,
+						"Enter friend's IP",
+						"Add Friend",
+						JOptionPane.PLAIN_MESSAGE,
+						null,
+						null,
+						"IP"
+						);
+				ClientData.friends.add(IP);
+				ClientData.friendsList.addItem(name);
 			}
 		});
-
-		ClientData.optionsComponents.add(serverIPField);
-
+		
+		JComboBox friendsList = new JComboBox();
+		ClientData.friendsList = friendsList;
+		friendsList.setPreferredSize(new Dimension(150,30));
+		friendsList.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				JComboBox friendsList = (JComboBox) e.getSource();
+				String friendIP = ClientData.friends.get(friendsList.getSelectedIndex());
+				ClientData.data[ClientData.activeWindow].serverAddress = friendIP;
+			}
+		});
+		
+		ClientData.optionsComponents.add(friendsList);
 		
 		JComboBox videoChat = new JComboBox(vchat);
 		videoChat.setPreferredSize(new Dimension(150,30));
@@ -284,24 +312,14 @@ public class ClientGUIManager {
 					break;
 				}
 				
-				
 				if(ClientData.data[ClientData.activeWindow].state.equals(ClientData.State.STREAMING))
 				{
-					
-					
 					JButton stopButton = ClientData.controlButtons.get(3);
 					JButton connectButton = ClientData.controlButtons.get(0);
 					JButton playButton = ClientData.controlButtons.get(1);
 					
 					stopButton.doClick();
-					//connectButton.doClick();
-					//playButton.doClick();
 				}
-				else
-				{
-					
-				}
-				
 			}
 		});
 		
@@ -309,8 +327,6 @@ public class ClientGUIManager {
 		
 		JLabel activity = new JLabel("Mode");
 		activity.setPreferredSize(new Dimension(150, 30));
-
-		
 		
 		JComboBox activeOrPassive = new JComboBox(actpass);
 		
@@ -467,7 +483,8 @@ public class ClientGUIManager {
 				.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-				.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(friendsList, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(addFriend, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				);
 		userOptionsLayout.setVerticalGroup(
 				userOptionsLayout.createSequentialGroup()
@@ -479,7 +496,8 @@ public class ClientGUIManager {
 				.addComponent(activity, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(activeOrPassive, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addComponent(editResources, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-				.addComponent(serverIPField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(friendsList, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(addFriend, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				);
 		userOptions.setLayout(userOptionsLayout);
 

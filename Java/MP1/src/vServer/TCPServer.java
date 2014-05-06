@@ -243,8 +243,6 @@ public class TCPServer implements Runnable{
 		else if( source.equals(Message.WEBCAM_SOURCE_VALUE))
 			SM.data.mediaType = ServerData.MediaType.WEBCHAT;
 		
-		
-		
 		if(activity.equalsIgnoreCase(Message.ACTIVITY_ACTIVE_VALUE))
 			SM.data.activity = "Active";
 		else

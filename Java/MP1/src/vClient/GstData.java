@@ -28,7 +28,7 @@ public class GstData {
 	protected int audioRTP;
 	protected int audioRTCPout;
 	protected int audioRTCPin;
-	protected String serverAddress = "127.0.0.1";
+	protected String serverAddress;
 	protected State state;
 	protected Mode mode;
 	protected Pipeline pipe;

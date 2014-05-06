@@ -65,6 +65,9 @@ public class ClientData {
 	protected static long t;
 	protected static boolean muted;
 	
+	protected static ArrayList<String> friends = new ArrayList<String>();
+	protected static JComboBox friendsList;
+	
 	public static String getIpAddress() {
 		return ipAddress;
 	}
